@@ -1,0 +1,97 @@
+# ==========================================
+# macOS System Files
+# ==========================================
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon\r
+._*
+.DocumentRevisions-V100
+.Spotlight-V100
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+# ==========================================
+# IDEs and Editors
+# ==========================================
+# IntelliJ IDEA
+.idea/
+*.iws
+*.iml
+*.ipr
+out/
+
+# VS Code
+.vscode/
+!.vscode/extensions.json
+*.code-workspace
+.history/
+
+# NetBeans
+/nbproject/private/
+/build/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+
+# ==========================================
+# Java / Maven
+# ==========================================
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+.mvn/wrapper/.maven-wrapper.properties
+.flatpak-builder/
+
+# ==========================================
+# Node.js / React
+# ==========================================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+dist/
+dist-ssr/
+*.local
+.npm/
+.eslintcache
+.stylelintcache
+
+# ==========================================
+# Tauri Desktop App
+# ==========================================
+# Rust build artifacts
+desktop/src-tauri/target/
+# Tauri temporary files
+desktop/src-tauri/binaries/
+desktop/src-tauri/gen/
+desktop/src-tauri/Cargo.lock
+
+# ==========================================
+# Docker & Environments
+# ==========================================
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+docker/db_data/
+docker-compose.override.yml
+
+# ==========================================
+# Logs & Diagnostic Files
+# ==========================================
+*.log
+logs/
+.logs/
+hs_err_pid*
+replay_pid*

@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  database:
+    image: postgres:16
+    container_name: cra-minidesk-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: cra_minidesk
+      POSTGRES_USER: cra_user
+      POSTGRES_PASSWORD: cra_password
+    ports:
+      - "55432:5432"
+    volumes:
+      - cra_minidesk_pgdata:/var/lib/postgresql/data
+
+volumes:
+  cra_minidesk_pgdata:
+    name: cra_minidesk_pgdata
