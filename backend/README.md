@@ -69,3 +69,46 @@ curl http://localhost:8088/api/health
   }
 }
 ```
+
+---
+
+## 👥 Customer API Endpoints
+
+### 1. Create a Customer
+```bash
+curl -X POST http://localhost:8088/api/customers \
+  -H "Content-Type: application/json" \
+  -d '{
+    "fullName": "Jane Doe",
+    "email": "jane.doe@example.com",
+    "phoneNumber": "+1234567890",
+    "notes": "Prefers morning appointments."
+  }'
+```
+
+### 2. List All Customers
+```bash
+curl http://localhost:8088/api/customers
+```
+
+### 3. Get Customer by ID
+```bash
+curl http://localhost:8088/api/customers/1
+```
+
+### 4. Update a Customer
+```bash
+curl -X PUT http://localhost:8088/api/customers/1 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "fullName": "Jane Smith",
+    "email": "jane.smith@example.com",
+    "phoneNumber": "+9876543210",
+    "notes": "Prefers morning appointments. Updated contact info."
+  }'
+```
+
+### 5. Delete a Customer
+```bash
+curl -X DELETE http://localhost:8088/api/customers/1
+```
