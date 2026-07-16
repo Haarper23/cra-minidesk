@@ -112,3 +112,53 @@ curl -X PUT http://localhost:8088/api/customers/1 \
 ```bash
 curl -X DELETE http://localhost:8088/api/customers/1
 ```
+
+---
+
+## 💻 Device API Endpoints
+
+### 1. Create a Device for Customer
+```bash
+curl -X POST http://localhost:8088/api/customers/1/devices \
+  -H "Content-Type: application/json" \
+  -d '{
+    "brand": "Apple",
+    "model": "MacBook Air M2",
+    "serialNumber": "MBA-M2-TEST-001",
+    "deviceType": "LAPTOP",
+    "color": "Midnight",
+    "accessories": "Charger included",
+    "conditionNotes": "Small scratch on the lid"
+  }'
+```
+
+### 2. List All Devices for Customer
+```bash
+curl http://localhost:8088/api/customers/1/devices
+```
+
+### 3. Get Device by ID
+```bash
+curl http://localhost:8088/api/devices/1
+```
+
+### 4. Update a Device
+```bash
+curl -X PUT http://localhost:8088/api/devices/1 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "brand": "Apple",
+    "model": "MacBook Air M3",
+    "serialNumber": "MBA-M3-TEST-999",
+    "deviceType": "LAPTOP",
+    "color": "Midnight Black",
+    "accessories": "Charger and case included",
+    "conditionNotes": "Small scratch on the lid. Otherwise pristine."
+  }'
+```
+
+### 5. Delete a Device
+```bash
+curl -X DELETE http://localhost:8088/api/devices/1
+```
+
