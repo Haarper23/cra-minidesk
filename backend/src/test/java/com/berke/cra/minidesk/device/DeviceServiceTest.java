@@ -6,6 +6,7 @@ import com.berke.cra.minidesk.customer.CustomerRepository;
 import com.berke.cra.minidesk.device.dto.CreateDeviceRequest;
 import com.berke.cra.minidesk.device.dto.DeviceResponse;
 import com.berke.cra.minidesk.device.dto.UpdateDeviceRequest;
+import com.berke.cra.minidesk.repairorder.RepairOrderRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -37,6 +38,9 @@ class DeviceServiceTest {
 
     @Mock
     private DeviceMapper deviceMapper;
+
+    @Mock
+    private RepairOrderRepository repairOrderRepository;
 
     @InjectMocks
     private DeviceService deviceService;
@@ -179,8 +183,19 @@ class DeviceServiceTest {
     void shouldDeleteDevice() {
         Long deviceId = 10L;
         when(deviceRepository.existsById(deviceId)).thenReturn(true);
+        when(repairOrderRepository.existsByDeviceId(deviceId)).thenReturn(false);
 
         assertDoesNotThrow(() -> deviceService.deleteDevice(deviceId));
         verify(deviceRepository, times(1)).deleteById(deviceId);
+    }
+
+    @Test
+    void shouldRejectDeleteDeviceWithRepairOrders() {
+        Long deviceId = 10L;
+        when(deviceRepository.existsById(deviceId)).thenReturn(true);
+        when(repairOrderRepository.existsByDeviceId(deviceId)).thenReturn(true);
+
+        assertThrows(IllegalArgumentException.class, () -> deviceService.deleteDevice(deviceId));
+        verify(deviceRepository, never()).deleteById(any());
     }
 }

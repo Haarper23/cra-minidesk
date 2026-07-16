@@ -6,6 +6,7 @@ import com.berke.cra.minidesk.customer.CustomerRepository;
 import com.berke.cra.minidesk.device.dto.CreateDeviceRequest;
 import com.berke.cra.minidesk.device.dto.DeviceResponse;
 import com.berke.cra.minidesk.device.dto.UpdateDeviceRequest;
+import com.berke.cra.minidesk.repairorder.RepairOrderRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -18,13 +19,16 @@ public class DeviceService {
     private final DeviceRepository deviceRepository;
     private final CustomerRepository customerRepository;
     private final DeviceMapper deviceMapper;
+    private final RepairOrderRepository repairOrderRepository;
 
     public DeviceService(DeviceRepository deviceRepository,
                          CustomerRepository customerRepository,
-                         DeviceMapper deviceMapper) {
+                         DeviceMapper deviceMapper,
+                         RepairOrderRepository repairOrderRepository) {
         this.deviceRepository = deviceRepository;
         this.customerRepository = customerRepository;
         this.deviceMapper = deviceMapper;
+        this.repairOrderRepository = repairOrderRepository;
     }
 
     @Transactional
@@ -83,6 +87,9 @@ public class DeviceService {
     public void deleteDevice(Long id) {
         if (!deviceRepository.existsById(id)) {
             throw new ResourceNotFoundException("Device with ID " + id + " not found");
+        }
+        if (repairOrderRepository.existsByDeviceId(id)) {
+            throw new IllegalArgumentException("Cannot delete device because it has associated repair orders.");
         }
         deviceRepository.deleteById(id);
     }
