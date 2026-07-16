@@ -232,3 +232,19 @@ curl -X PATCH http://localhost:8088/api/repair-orders/1/status \
 ```bash
 curl -X DELETE http://localhost:8088/api/repair-orders/1
 ```
+
+---
+
+## ⏳ Repair Order Timeline API Endpoints
+
+### 1. Get Repair Order Timeline
+```bash
+curl http://localhost:8088/api/repair-orders/1/timeline
+```
+
+### Design Notes:
+- Timeline entries are generated automatically by the backend system.
+- Clients are not allowed to directly create, edit, or delete timeline entries (no write endpoints exist).
+- The timeline records three main event types: creation (`REPAIR_ORDER_CREATED`), status transitions (`STATUS_CHANGED`), and changes to editable details (`REPAIR_DETAILS_UPDATED`).
+- Details updates store only changed fields list alphabetically without exposing old/new field values.
+- Deletions are cascaded, removing associated timeline histories when the parent repair order is deleted.
