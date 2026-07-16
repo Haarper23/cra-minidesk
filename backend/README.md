@@ -162,3 +162,73 @@ curl -X PUT http://localhost:8088/api/devices/1 \
 curl -X DELETE http://localhost:8088/api/devices/1
 ```
 
+---
+
+## 🛠️ Repair Order API Endpoints
+
+### 1. Create a Repair Order
+```bash
+curl -X POST http://localhost:8088/api/repair-orders \
+  -H "Content-Type: application/json" \
+  -d '{
+    "deviceId": 1,
+    "reportedIssue": "Device does not power on",
+    "priority": "HIGH",
+    "diagnosisNotes": "Initial inspection pending",
+    "technicianNotes": null,
+    "estimatedCost": 2500.00
+  }'
+```
+
+### 2. List All Repair Orders
+```bash
+curl http://localhost:8088/api/repair-orders
+```
+
+### 3. Filter Repair Orders by Status
+```bash
+curl http://localhost:8088/api/repair-orders?status=DIAGNOSING
+```
+
+### 4. Get Repair Order by ID
+```bash
+curl http://localhost:8088/api/repair-orders/1
+```
+
+### 5. Get Repair Order by Order Number
+```bash
+curl http://localhost:8088/api/repair-orders/order-number/CRA-20260716-A1B2C3D4
+```
+
+### 6. Get Repair Orders for a Device
+```bash
+curl http://localhost:8088/api/devices/1/repair-orders
+```
+
+### 7. Update Repair Details
+```bash
+curl -X PUT http://localhost:8088/api/repair-orders/1 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "reportedIssue": "Device does not power on, liquid damage suspected",
+    "priority": "URGENT",
+    "diagnosisNotes": "Detected liquid residue on the logic board.",
+    "technicianNotes": "Cleaned the board and replaced blown capacitor.",
+    "estimatedCost": 2500.00,
+    "finalCost": 2800.00
+  }'
+```
+
+### 8. Update Repair Status
+```bash
+curl -X PATCH http://localhost:8088/api/repair-orders/1/status \
+  -H "Content-Type: application/json" \
+  -d '{
+    "status": "DIAGNOSING"
+  }'
+```
+
+### 9. Delete an Eligible Repair Order
+```bash
+curl -X DELETE http://localhost:8088/api/repair-orders/1
+```
