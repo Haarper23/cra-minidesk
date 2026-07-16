@@ -248,3 +248,50 @@ curl http://localhost:8088/api/repair-orders/1/timeline
 - The timeline records three main event types: creation (`REPAIR_ORDER_CREATED`), status transitions (`STATUS_CHANGED`), and changes to editable details (`REPAIR_DETAILS_UPDATED`).
 - Details updates store only changed fields list alphabetically without exposing old/new field values.
 - Deletions are cascaded, removing associated timeline histories when the parent repair order is deleted.
+
+---
+
+## 📊 Dashboard API Endpoints
+
+### 1. Get Dashboard Statistics
+```bash
+curl http://localhost:8088/api/dashboard
+```
+
+### Response Payload:
+```json
+{
+  "success": true,
+  "message": "Dashboard statistics retrieved successfully",
+  "data": {
+    "totalCustomers": 12,
+    "totalDevices": 18,
+    "totalRepairOrders": 24,
+    "activeRepairOrders": 10,
+    "waitingForCustomerApproval": 2,
+    "waitingForPart": 1,
+    "readyForDelivery": 3,
+    "urgentRepairOrders": 1,
+    "completedToday": 2,
+    "deliveredToday": 1,
+    "repairOrdersByStatus": [
+      { "status": "RECEIVED", "count": 1 },
+      { "status": "DIAGNOSING", "count": 2 },
+      { "status": "WAITING_FOR_CUSTOMER_APPROVAL", "count": 2 },
+      { "status": "APPROVED", "count": 1 },
+      { "status": "IN_REPAIR", "count": 0 },
+      { "status": "WAITING_FOR_PART", "count": 1 },
+      { "status": "COMPLETED", "count": 0 },
+      { "status": "READY_FOR_DELIVERY", "count": 3 },
+      { "status": "DELIVERED", "count": 12 },
+      { "status": "CANCELLED", "count": 2 }
+    ],
+    "generatedAt": "2026-07-17T10:30:00Z"
+  }
+}
+```
+
+### Design Notes:
+- The dashboard is completely read-only (no write operations are supported).
+- Daily statistics (`completedToday` and `deliveredToday`) use UTC calendar date boundaries (inclusive start and exclusive end of UTC calendar day).
+- Revenue, payment, inventory, and other non-operational metrics are not included in this foundation sprint.

@@ -71,6 +71,16 @@ The platform records an append-only, immutable history of significant lifecycle 
 
 ---
 
+## 📊 Dashboard Statistics
+
+The platform provides a read-only aggregation layer to summarize operational repair-shop performance metrics:
+*   **Query-Time Calculation**: The dashboard does not employ real-time streaming or caching yet. Metrics are calculated on-demand whenever the `/api/dashboard` endpoint is requested.
+*   **Optimized Repository Queries**: Performance is secured by executing repository-level `COUNT` queries directly in the database. Full-table entity loading into application memory is strictly avoided.
+*   **UTC Date Boundaries**: Daily statistics (e.g., completed or delivered today) are strictly calculated using UTC calendar boundaries (inclusive start of UTC day, exclusive start of next UTC day).
+*   **Deterministic Clock Injection**: The system injects a `Clock` bean to calculate UTC boundaries deterministically, allowing fixed-time unit and integration testing.
+
+---
+
 ## 🔮 Future Modules
 
 To ensure portfolio-grade scalability, the architecture is designed to accommodate the following future enhancements:
