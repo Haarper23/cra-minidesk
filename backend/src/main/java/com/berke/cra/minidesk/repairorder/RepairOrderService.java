@@ -9,6 +9,8 @@ import com.berke.cra.minidesk.repairorder.dto.UpdateRepairOrderRequest;
 import com.berke.cra.minidesk.repairorder.dto.UpdateRepairOrderStatusRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.berke.cra.minidesk.repairorder.timeline.RepairOrderTimelineService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -23,13 +25,19 @@ public class RepairOrderService {
     private final RepairOrderRepository repairOrderRepository;
     private final DeviceRepository deviceRepository;
     private final RepairOrderMapper repairOrderMapper;
+    private final RepairOrderTimelineService repairOrderTimelineService;
+    private final ObjectMapper objectMapper;
 
     public RepairOrderService(RepairOrderRepository repairOrderRepository,
                               DeviceRepository deviceRepository,
-                              RepairOrderMapper repairOrderMapper) {
+                              RepairOrderMapper repairOrderMapper,
+                              RepairOrderTimelineService repairOrderTimelineService,
+                              ObjectMapper objectMapper) {
         this.repairOrderRepository = repairOrderRepository;
         this.deviceRepository = deviceRepository;
         this.repairOrderMapper = repairOrderMapper;
+        this.repairOrderTimelineService = repairOrderTimelineService;
+        this.objectMapper = objectMapper;
     }
 
     @Transactional
@@ -44,6 +52,7 @@ public class RepairOrderService {
         String orderNumber = generateUniqueOrderNumber();
         RepairOrder order = repairOrderMapper.toEntity(request, device, orderNumber);
         RepairOrder saved = repairOrderRepository.save(order);
+        repairOrderTimelineService.recordRepairOrderCreated(saved);
         return repairOrderMapper.toResponse(saved);
     }
 
@@ -97,8 +106,34 @@ public class RepairOrderService {
             throw new IllegalArgumentException("Final cost cannot be negative");
         }
 
+        List<String> changedFields = new java.util.ArrayList<>();
+        if (isStringChanged(order.getReportedIssue(), request.reportedIssue())) {
+            changedFields.add("reportedIssue");
+        }
+        if (isPriorityChanged(order.getPriority(), request.priority())) {
+            changedFields.add("priority");
+        }
+        if (isStringChanged(order.getDiagnosisNotes(), request.diagnosisNotes())) {
+            changedFields.add("diagnosisNotes");
+        }
+        if (isStringChanged(order.getTechnicianNotes(), request.technicianNotes())) {
+            changedFields.add("technicianNotes");
+        }
+        if (isBigDecimalChanged(order.getEstimatedCost(), request.estimatedCost())) {
+            changedFields.add("estimatedCost");
+        }
+        if (isBigDecimalChanged(order.getFinalCost(), request.finalCost())) {
+            changedFields.add("finalCost");
+        }
+
         repairOrderMapper.updateEntity(order, request);
         RepairOrder updated = repairOrderRepository.save(order);
+
+        if (!changedFields.isEmpty()) {
+            String metadata = serializeMetadata(changedFields);
+            repairOrderTimelineService.recordRepairDetailsUpdated(updated, metadata);
+        }
+
         return repairOrderMapper.toResponse(updated);
     }
 
@@ -124,6 +159,7 @@ public class RepairOrderService {
         }
 
         RepairOrder updated = repairOrderRepository.save(order);
+        repairOrderTimelineService.recordStatusChanged(updated, currentStatus, newStatus);
         return repairOrderMapper.toResponse(updated);
     }
 
@@ -170,5 +206,55 @@ public class RepairOrderService {
             case READY_FOR_DELIVERY -> to == RepairOrderStatus.DELIVERED;
             case DELIVERED, CANCELLED -> false;
         };
+    }
+
+    private String clean(String input) {
+        if (input == null) {
+            return null;
+        }
+        String trimmed = input.trim();
+        return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private boolean isStringChanged(String oldVal, String newVal) {
+        String cleanOld = clean(oldVal);
+        String cleanNew = clean(newVal);
+        if (cleanOld == null && cleanNew == null) {
+            return false;
+        }
+        if (cleanOld == null || cleanNew == null) {
+            return true;
+        }
+        return !cleanOld.equals(cleanNew);
+    }
+
+    private boolean isPriorityChanged(RepairPriority oldVal, RepairPriority newVal) {
+        if (oldVal == null && newVal == null) {
+            return false;
+        }
+        if (oldVal == null || newVal == null) {
+            return true;
+        }
+        return oldVal != newVal;
+    }
+
+    private boolean isBigDecimalChanged(java.math.BigDecimal oldVal, java.math.BigDecimal newVal) {
+        if (oldVal == null && newVal == null) {
+            return false;
+        }
+        if (oldVal == null || newVal == null) {
+            return true;
+        }
+        return oldVal.compareTo(newVal) != 0;
+    }
+
+    private String serializeMetadata(List<String> changedFields) {
+        try {
+            java.util.Collections.sort(changedFields);
+            record ChangedFieldsMetadata(List<String> changedFields) {}
+            return objectMapper.writeValueAsString(new ChangedFieldsMetadata(changedFields));
+        } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+            throw new RuntimeException("Failed to serialize changed fields metadata", e);
+        }
     }
 }

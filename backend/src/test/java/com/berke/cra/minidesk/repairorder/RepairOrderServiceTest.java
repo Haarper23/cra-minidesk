@@ -10,9 +10,13 @@ import com.berke.cra.minidesk.repairorder.dto.UpdateRepairOrderRequest;
 import com.berke.cra.minidesk.repairorder.dto.UpdateRepairOrderStatusRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.MockitoAnnotations;
+import com.berke.cra.minidesk.repairorder.timeline.RepairOrderTimelineService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -42,6 +46,12 @@ class RepairOrderServiceTest {
 
     @Mock
     private RepairOrderMapper repairOrderMapper;
+
+    @Mock
+    private RepairOrderTimelineService repairOrderTimelineService;
+
+    @Spy
+    private ObjectMapper objectMapper = new ObjectMapper();
 
     @InjectMocks
     private RepairOrderService repairOrderService;
@@ -375,5 +385,164 @@ class RepairOrderServiceTest {
         // Client-controlled orderNumber is not in CreateRepairOrderRequest DTO
         // Check fields of CreateRepairOrderRequest DTO at compile time or class inspection
         // Our DTO class lacks orderNumber field, proving this requirement.
+    }
+
+    @Test
+    void createRepairOrderRecordsOneCreationEvent() {
+        Long deviceId = 1L;
+        Device device = new Device();
+        device.setId(deviceId);
+
+        CreateRepairOrderRequest request = new CreateRepairOrderRequest(
+                deviceId, "Cracked screen", RepairPriority.HIGH, null, null, null
+        );
+
+        RepairOrder order = new RepairOrder(
+                "CRA-20260716-12345678", device, "Cracked screen", null, null,
+                RepairOrderStatus.RECEIVED, RepairPriority.HIGH, null, null, Instant.now()
+        );
+
+        when(deviceRepository.findById(deviceId)).thenReturn(Optional.of(device));
+        when(repairOrderRepository.existsByOrderNumber(any(String.class))).thenReturn(false);
+        when(repairOrderMapper.toEntity(eq(request), eq(device), any(String.class))).thenReturn(order);
+        when(repairOrderRepository.save(order)).thenReturn(order);
+
+        repairOrderService.createRepairOrder(request);
+
+        verify(repairOrderTimelineService, times(1)).recordRepairOrderCreated(order);
+    }
+
+    @Test
+    void failedCreateDoesNotRecordTimelineEvent() {
+        Long deviceId = 999L;
+        CreateRepairOrderRequest request = new CreateRepairOrderRequest(
+                deviceId, "Cracked screen", RepairPriority.HIGH, null, null, null
+        );
+
+        when(deviceRepository.findById(deviceId)).thenReturn(Optional.empty());
+
+        assertThrows(ResourceNotFoundException.class, () -> repairOrderService.createRepairOrder(request));
+        verify(repairOrderTimelineService, never()).recordRepairOrderCreated(any());
+    }
+
+    @Test
+    void validStatusTransitionRecordsOneStatusEvent() {
+        Long orderId = 10L;
+        RepairOrder order = new RepairOrder();
+        order.setStatus(RepairOrderStatus.RECEIVED);
+
+        UpdateRepairOrderStatusRequest request = new UpdateRepairOrderStatusRequest(RepairOrderStatus.DIAGNOSING);
+
+        when(repairOrderRepository.findById(orderId)).thenReturn(Optional.of(order));
+        when(repairOrderRepository.save(order)).thenReturn(order);
+
+        repairOrderService.updateRepairOrderStatus(orderId, request);
+
+        verify(repairOrderTimelineService, times(1)).recordStatusChanged(order, RepairOrderStatus.RECEIVED, RepairOrderStatus.DIAGNOSING);
+    }
+
+    @Test
+    void invalidStatusTransitionRecordsNoTimelineEvent() {
+        Long orderId = 10L;
+        RepairOrder order = new RepairOrder();
+        order.setStatus(RepairOrderStatus.RECEIVED);
+
+        UpdateRepairOrderStatusRequest request = new UpdateRepairOrderStatusRequest(RepairOrderStatus.COMPLETED);
+
+        when(repairOrderRepository.findById(orderId)).thenReturn(Optional.of(order));
+
+        assertThrows(IllegalArgumentException.class, () -> repairOrderService.updateRepairOrderStatus(orderId, request));
+        verify(repairOrderTimelineService, never()).recordStatusChanged(any(), any(), any());
+    }
+
+    @Test
+    void detailsUpdateRecordsChangedFieldNamesAlphabetically() {
+        Long orderId = 10L;
+        RepairOrder order = new RepairOrder();
+        order.setReportedIssue("Old issue");
+        order.setPriority(RepairPriority.LOW);
+
+        UpdateRepairOrderRequest request = new UpdateRepairOrderRequest(
+                "New issue", RepairPriority.HIGH, null, null, null, null
+        );
+
+        when(repairOrderRepository.findById(orderId)).thenReturn(Optional.of(order));
+        when(repairOrderRepository.save(order)).thenReturn(order);
+
+        repairOrderService.updateRepairOrder(orderId, request);
+
+        ArgumentCaptor<String> metadataCaptor = ArgumentCaptor.forClass(String.class);
+        verify(repairOrderTimelineService, times(1)).recordRepairDetailsUpdated(eq(order), metadataCaptor.capture());
+
+        String capturedMetadata = metadataCaptor.getValue();
+        assertTrue(capturedMetadata.contains("\"changedFields\":[\"priority\",\"reportedIssue\"]"));
+    }
+
+    @Test
+    void noOpDetailsUpdateRecordsNoEvent() {
+        Long orderId = 10L;
+        RepairOrder order = new RepairOrder();
+        order.setReportedIssue("Issue");
+        order.setPriority(RepairPriority.HIGH);
+
+        UpdateRepairOrderRequest request = new UpdateRepairOrderRequest(
+                "Issue", RepairPriority.HIGH, null, null, null, null
+        );
+
+        when(repairOrderRepository.findById(orderId)).thenReturn(Optional.of(order));
+        when(repairOrderRepository.save(order)).thenReturn(order);
+
+        repairOrderService.updateRepairOrder(orderId, request);
+
+        verify(repairOrderTimelineService, never()).recordRepairDetailsUpdated(any(), any());
+    }
+
+    @Test
+    void multipleChangedFieldsProduceOneUpdateEvent() {
+        Long orderId = 10L;
+        RepairOrder order = new RepairOrder();
+        order.setReportedIssue("Old issue");
+        order.setPriority(RepairPriority.LOW);
+        order.setEstimatedCost(new BigDecimal("100.00"));
+
+        UpdateRepairOrderRequest request = new UpdateRepairOrderRequest(
+                "New issue", RepairPriority.HIGH, null, null, new BigDecimal("200.00"), null
+        );
+
+        when(repairOrderRepository.findById(orderId)).thenReturn(Optional.of(order));
+        when(repairOrderRepository.save(order)).thenReturn(order);
+
+        repairOrderService.updateRepairOrder(orderId, request);
+
+        verify(repairOrderTimelineService, times(1)).recordRepairDetailsUpdated(eq(order), any(String.class));
+    }
+
+    @Test
+    void negativeCostValidationStillWorksAndRecordsNoTimelineEvent() {
+        Long deviceId = 1L;
+        Device device = new Device();
+        device.setId(deviceId);
+
+        CreateRepairOrderRequest request = new CreateRepairOrderRequest(
+                deviceId, "Cracked screen", RepairPriority.HIGH, null, null, new BigDecimal("-50.00")
+        );
+
+        when(deviceRepository.findById(deviceId)).thenReturn(Optional.of(device));
+
+        assertThrows(IllegalArgumentException.class, () -> repairOrderService.createRepairOrder(request));
+        verify(repairOrderTimelineService, never()).recordRepairOrderCreated(any());
+    }
+
+    @Test
+    void deletionRulesRemainUnchangedAndRecordNoTimelineEvent() {
+        Long orderId = 10L;
+        RepairOrder order = new RepairOrder();
+        order.setStatus(RepairOrderStatus.IN_REPAIR);
+
+        when(repairOrderRepository.findById(orderId)).thenReturn(Optional.of(order));
+
+        assertThrows(IllegalArgumentException.class, () -> repairOrderService.deleteRepairOrder(orderId));
+        // Deletion events must not be recorded (should not invoke any timeline service record call)
+        verify(repairOrderTimelineService, never()).recordStatusChanged(any(), any(), any());
     }
 }

@@ -62,6 +62,15 @@ The relational database layer ensures acid-compliant transactions and data integ
 
 ---
 
+## ⏳ Repair Order Timeline
+
+The platform records an append-only, immutable history of significant lifecycle events for each repair order:
+*   **Transaction Boundaries**: Timeline events are recorded in the exact same database transaction as the repair order mutations. If the primary update fails or rolls back, the timeline event rolls back automatically.
+*   **Write Access**: Clients have read-only access. Direct creation, mutation, or deletion of timeline entries via REST is prohibited.
+*   **Audit Scope**: Currently records order creation (`REPAIR_ORDER_CREATED`), details updates (`REPAIR_DETAILS_UPDATED` with changed field lists), and transitions (`STATUS_CHANGED`). This acts as an internal state change history rather than a compliance audit log, as it does not yet attribute actions to system users.
+
+---
+
 ## 🔮 Future Modules
 
 To ensure portfolio-grade scalability, the architecture is designed to accommodate the following future enhancements:
