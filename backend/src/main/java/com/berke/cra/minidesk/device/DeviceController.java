@@ -40,13 +40,22 @@ public class DeviceController {
     }
 
     @GetMapping("/api/customers/{customerId}/devices")
-    public ResponseEntity<ApiResponse<List<DeviceResponse>>> getDevicesByCustomerId(
-            @PathVariable Long customerId) {
-        List<DeviceResponse> devices = deviceService.getDevicesByCustomerId(customerId);
-        ApiResponse<List<DeviceResponse>> response = new ApiResponse<>(
-                true,
-                "Devices retrieved successfully",
-                devices
+    public ResponseEntity<ApiResponse<com.berke.cra.minidesk.common.pagination.PageResponse<DeviceResponse>>> getDevicesByCustomerId(
+            @PathVariable Long customerId,
+            @org.springframework.web.bind.annotation.RequestParam(value = "query", required = false) String query,
+            @org.springframework.web.bind.annotation.RequestParam(value = "deviceType", required = false) DeviceType deviceType,
+            @org.springframework.web.bind.annotation.RequestParam(value = "page", defaultValue = "0") int page,
+            @org.springframework.web.bind.annotation.RequestParam(value = "size", defaultValue = "20") int size,
+            @org.springframework.web.bind.annotation.RequestParam(value = "sortBy", defaultValue = "createdAt") String sortBy,
+            @org.springframework.web.bind.annotation.RequestParam(value = "sortDirection", defaultValue = "desc") String sortDirection) {
+
+        com.berke.cra.minidesk.common.pagination.PageResponse<DeviceResponse> pageResponse = deviceService.searchDevicesByCustomer(
+            customerId, query, deviceType, page, size, sortBy, sortDirection
+        );
+        ApiResponse<com.berke.cra.minidesk.common.pagination.PageResponse<DeviceResponse>> response = new ApiResponse<>(
+            true,
+            "Devices retrieved successfully",
+            pageResponse
         );
         return ResponseEntity.ok(response);
     }

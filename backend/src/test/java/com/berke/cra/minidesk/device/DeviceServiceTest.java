@@ -118,20 +118,24 @@ class DeviceServiceTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     void shouldReturnDevicesByCustomerId() {
         Long customerId = 1L;
         Device device = new Device();
         DeviceResponse response = new DeviceResponse(10L, customerId, "John Doe", "Apple", "MacBook", "XYZ123", DeviceType.LAPTOP, "Silver", "Charger", "Good", Instant.now(), Instant.now());
 
         when(customerRepository.existsById(customerId)).thenReturn(true);
-        when(deviceRepository.findByCustomerIdOrderByCreatedAtDesc(customerId)).thenReturn(List.of(device));
+        org.springframework.data.domain.Page<Device> devicePage = new org.springframework.data.domain.PageImpl<>(List.of(device));
+        when(deviceRepository.findAll(any(org.springframework.data.jpa.domain.Specification.class), any(org.springframework.data.domain.Pageable.class))).thenReturn(devicePage);
         when(deviceMapper.toResponse(device)).thenReturn(response);
 
-        List<DeviceResponse> results = deviceService.getDevicesByCustomerId(customerId);
+        com.berke.cra.minidesk.common.pagination.PageResponse<DeviceResponse> results = deviceService.searchDevicesByCustomer(
+            customerId, null, null, 0, 20, "createdAt", "desc"
+        );
 
         assertNotNull(results);
-        assertEquals(1, results.size());
-        assertEquals(10L, results.getFirst().id());
+        assertEquals(1, results.content().size());
+        assertEquals(10L, results.content().getFirst().id());
     }
 
     @Test
@@ -197,5 +201,55 @@ class DeviceServiceTest {
 
         assertThrows(IllegalArgumentException.class, () -> deviceService.deleteDevice(deviceId));
         verify(deviceRepository, never()).deleteById(any());
+    }
+
+    @Test
+    void shouldRejectDeviceSearchWithInvalidSortField() {
+        when(customerRepository.existsById(1L)).thenReturn(true);
+        assertThrows(IllegalArgumentException.class, () ->
+            deviceService.searchDevicesByCustomer(1L, null, null, 0, 20, "invalidField", "asc")
+        );
+    }
+
+    @Test
+    void shouldRejectDeviceSearchWithInvalidSortDirection() {
+        when(customerRepository.existsById(1L)).thenReturn(true);
+        assertThrows(IllegalArgumentException.class, () ->
+            deviceService.searchDevicesByCustomer(1L, null, null, 0, 20, "brand", "invalidDir")
+        );
+    }
+
+    @Test
+    void shouldRejectDeviceSearchWithNegativePage() {
+        when(customerRepository.existsById(1L)).thenReturn(true);
+        assertThrows(IllegalArgumentException.class, () ->
+            deviceService.searchDevicesByCustomer(1L, null, null, -1, 20, "brand", "asc")
+        );
+    }
+
+    @Test
+    void shouldRejectDeviceSearchWithZeroSize() {
+        when(customerRepository.existsById(1L)).thenReturn(true);
+        assertThrows(IllegalArgumentException.class, () ->
+            deviceService.searchDevicesByCustomer(1L, null, null, 0, 0, "brand", "asc")
+        );
+    }
+
+    @Test
+    void shouldRejectDeviceSearchWithLargeSize() {
+        when(customerRepository.existsById(1L)).thenReturn(true);
+        assertThrows(IllegalArgumentException.class, () ->
+            deviceService.searchDevicesByCustomer(1L, null, null, 0, 101, "brand", "asc")
+        );
+    }
+
+    @Test
+    void shouldThrowNotFoundForMissingCustomerInDeviceSearch() {
+        Long customerId = 999L;
+        when(customerRepository.existsById(customerId)).thenReturn(false);
+
+        assertThrows(ResourceNotFoundException.class, () ->
+            deviceService.searchDevicesByCustomer(customerId, null, null, 0, 20, "brand", "asc")
+        );
     }
 }

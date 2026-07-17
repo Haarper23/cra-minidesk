@@ -4,11 +4,11 @@ import com.berke.cra.minidesk.common.error.ResourceNotFoundException;
 import com.berke.cra.minidesk.device.dto.CreateDeviceRequest;
 import com.berke.cra.minidesk.device.dto.DeviceResponse;
 import com.berke.cra.minidesk.device.dto.UpdateDeviceRequest;
+import com.berke.cra.minidesk.testsupport.PostgresIntegrationTest;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
@@ -19,6 +19,7 @@ import java.util.List;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.never;
@@ -32,9 +33,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@SpringBootTest
 @AutoConfigureMockMvc
-class DeviceControllerTest {
+class DeviceControllerTest extends PostgresIntegrationTest {
 
     @Autowired
     private MockMvc mockMvc;
@@ -85,13 +85,16 @@ class DeviceControllerTest {
     void shouldGetDevicesByCustomerId() throws Exception {
         Long customerId = 1L;
         DeviceResponse response = new DeviceResponse(10L, customerId, "John Doe", "Apple", "MacBook Air", "MBA-123", DeviceType.LAPTOP, "Midnight", "Charger", "Scratch", Instant.now(), Instant.now());
-        when(deviceService.getDevicesByCustomerId(customerId)).thenReturn(List.of(response));
+        com.berke.cra.minidesk.common.pagination.PageResponse<DeviceResponse> pageResponse = new com.berke.cra.minidesk.common.pagination.PageResponse<>(
+            List.of(response), 0, 20, 1L, 1, true, true, false, false
+        );
+        when(deviceService.searchDevicesByCustomer(customerId, null, null, 0, 20, "createdAt", "desc")).thenReturn(pageResponse);
 
         mockMvc.perform(get("/api/customers/{customerId}/devices", customerId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success", is(true)))
-                .andExpect(jsonPath("$.data", hasSize(1)))
-                .andExpect(jsonPath("$.data[0].brand", is("Apple")));
+                .andExpect(jsonPath("$.data.content", hasSize(1)))
+                .andExpect(jsonPath("$.data.content[0].brand", is("Apple")));
     }
 
     @Test
@@ -144,5 +147,109 @@ class DeviceControllerTest {
                 .andExpect(status().isNoContent());
 
         verify(deviceService, times(1)).deleteDevice(deviceId);
+    }
+
+    @Test
+    void shouldReturn400ForInvalidSortingInDevices() throws Exception {
+        Long customerId = 1L;
+        when(deviceService.searchDevicesByCustomer(eq(customerId), any(), any(), anyInt(), anyInt(), eq("invalidField"), any()))
+                .thenThrow(new IllegalArgumentException("Sorting by field 'invalidField' is not supported"));
+
+        mockMvc.perform(get("/api/customers/{customerId}/devices", customerId).param("sortBy", "invalidField"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success", is(false)))
+                .andExpect(jsonPath("$.message", is("Sorting by field 'invalidField' is not supported")));
+    }
+
+    @Test
+    void shouldReturn400ForInvalidDirectionInDevices() throws Exception {
+        Long customerId = 1L;
+        when(deviceService.searchDevicesByCustomer(eq(customerId), any(), any(), anyInt(), anyInt(), any(), eq("invalidDir")))
+                .thenThrow(new IllegalArgumentException("Sort direction 'invalidDir' is not supported"));
+
+        mockMvc.perform(get("/api/customers/{customerId}/devices", customerId).param("sortDirection", "invalidDir"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success", is(false)))
+                .andExpect(jsonPath("$.message", is("Sort direction 'invalidDir' is not supported")));
+    }
+
+    @Test
+    void shouldReturn400ForNegativePageInDevices() throws Exception {
+        Long customerId = 1L;
+        when(deviceService.searchDevicesByCustomer(eq(customerId), any(), any(), eq(-1), anyInt(), any(), any()))
+                .thenThrow(new IllegalArgumentException("Page index must not be negative"));
+
+        mockMvc.perform(get("/api/customers/{customerId}/devices", customerId).param("page", "-1"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success", is(false)))
+                .andExpect(jsonPath("$.message", is("Page index must not be negative")));
+    }
+
+    @Test
+    void shouldReturn400ForZeroSizeInDevices() throws Exception {
+        Long customerId = 1L;
+        when(deviceService.searchDevicesByCustomer(eq(customerId), any(), any(), anyInt(), eq(0), any(), any()))
+                .thenThrow(new IllegalArgumentException("Page size must not be less than 1"));
+
+        mockMvc.perform(get("/api/customers/{customerId}/devices", customerId).param("size", "0"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success", is(false)))
+                .andExpect(jsonPath("$.message", is("Page size must not be less than 1")));
+    }
+
+    @Test
+    void shouldReturn400ForLargeSizeInDevices() throws Exception {
+        Long customerId = 1L;
+        when(deviceService.searchDevicesByCustomer(eq(customerId), any(), any(), anyInt(), eq(101), any(), any()))
+                .thenThrow(new IllegalArgumentException("Page size must not be greater than 100"));
+
+        mockMvc.perform(get("/api/customers/{customerId}/devices", customerId).param("size", "101"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success", is(false)))
+                .andExpect(jsonPath("$.message", is("Page size must not be greater than 100")));
+    }
+
+    @Test
+    void shouldReturn404ForMissingCustomerInDevices() throws Exception {
+        Long customerId = 999L;
+        when(deviceService.searchDevicesByCustomer(eq(customerId), any(), any(), anyInt(), anyInt(), any(), any()))
+                .thenThrow(new ResourceNotFoundException("Customer with ID 999 not found"));
+
+        mockMvc.perform(get("/api/customers/{customerId}/devices", customerId))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.success", is(false)))
+                .andExpect(jsonPath("$.message", is("Customer with ID 999 not found")));
+    }
+
+    @Test
+    void shouldAcceptSearchDeviceQueryParamsAndReturnPageResponse() throws Exception {
+        Long customerId = 1L;
+        DeviceResponse response = new DeviceResponse(10L, customerId, "Jane Doe", "Apple", "MacBook Pro", "MBP-555", DeviceType.LAPTOP, "Space Gray", "Charger", "Mint", Instant.now(), Instant.now());
+        com.berke.cra.minidesk.common.pagination.PageResponse<DeviceResponse> pageResponse = new com.berke.cra.minidesk.common.pagination.PageResponse<>(
+            List.of(response), 0, 5, 1L, 1, true, true, false, false
+        );
+
+        when(deviceService.searchDevicesByCustomer(customerId, "MacBook", DeviceType.LAPTOP, 0, 5, "model", "asc")).thenReturn(pageResponse);
+
+        mockMvc.perform(get("/api/customers/{customerId}/devices", customerId)
+                .param("query", "MacBook")
+                .param("deviceType", "LAPTOP")
+                .param("page", "0")
+                .param("size", "5")
+                .param("sortBy", "model")
+                .param("sortDirection", "asc"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success", is(true)))
+                .andExpect(jsonPath("$.data.content", hasSize(1)))
+                .andExpect(jsonPath("$.data.content[0].brand", is("Apple")))
+                .andExpect(jsonPath("$.data.content[0].model", is("MacBook Pro")))
+                .andExpect(jsonPath("$.data.page", is(0)))
+                .andExpect(jsonPath("$.data.size", is(5)))
+                .andExpect(jsonPath("$.data.totalElements", is(1)))
+                .andExpect(jsonPath("$.data.totalPages", is(1)))
+                .andExpect(jsonPath("$.data.first", is(true)))
+                .andExpect(jsonPath("$.data.last", is(true)))
+                .andExpect(jsonPath("$.data.hasNext", is(false)))
+                .andExpect(jsonPath("$.data.hasPrevious", is(false)));
     }
 }

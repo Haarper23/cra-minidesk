@@ -71,27 +71,67 @@ public class RepairOrderService {
     }
 
     @Transactional(readOnly = true)
-    public List<RepairOrderResponse> getAllRepairOrders() {
-        return repairOrderRepository.findAllByOrderByCreatedAtDesc().stream()
-                .map(repairOrderMapper::toResponse)
-                .toList();
+    public com.berke.cra.minidesk.common.pagination.PageResponse<RepairOrderResponse> searchRepairOrders(
+            String query,
+            RepairOrderStatus status,
+            RepairPriority priority,
+            Long customerId,
+            Long deviceId,
+            Instant createdFrom,
+            Instant createdTo,
+            int page,
+            int size,
+            String sortBy,
+            String sortDirection) {
+
+        if (createdFrom != null && createdTo != null && !createdFrom.isBefore(createdTo)) {
+            throw new IllegalArgumentException("createdFrom must be before createdTo");
+        }
+
+        java.util.Set<String> allowedFields = java.util.Set.of(
+            "id", "orderNumber", "status", "priority", "receivedAt", "completedAt", "deliveredAt", "createdAt", "updatedAt"
+        );
+        org.springframework.data.domain.Pageable pageable = com.berke.cra.minidesk.common.pagination.PaginationUtils.createPageable(
+            page, size, sortBy, sortDirection, allowedFields
+        );
+
+        org.springframework.data.jpa.domain.Specification<RepairOrder> spec = RepairOrderSpecifications.filterRepairOrders(
+            query, status, priority, customerId, deviceId, createdFrom, createdTo
+        );
+
+        org.springframework.data.domain.Page<RepairOrder> orderPage = repairOrderRepository.findAll(spec, pageable);
+
+        return com.berke.cra.minidesk.common.pagination.PageResponse.fromPage(orderPage, repairOrderMapper::toResponse);
     }
 
     @Transactional(readOnly = true)
-    public List<RepairOrderResponse> getRepairOrdersByDeviceId(Long deviceId) {
+    public com.berke.cra.minidesk.common.pagination.PageResponse<RepairOrderResponse> searchRepairOrdersByDevice(
+            Long deviceId,
+            RepairOrderStatus status,
+            RepairPriority priority,
+            int page,
+            int size,
+            String sortBy,
+            String sortDirection) {
+
         if (!deviceRepository.existsById(deviceId)) {
             throw new ResourceNotFoundException("Device with ID " + deviceId + " not found");
         }
-        return repairOrderRepository.findByDeviceIdOrderByCreatedAtDesc(deviceId).stream()
-                .map(repairOrderMapper::toResponse)
-                .toList();
-    }
 
-    @Transactional(readOnly = true)
-    public List<RepairOrderResponse> getRepairOrdersByStatus(RepairOrderStatus status) {
-        return repairOrderRepository.findByStatusOrderByCreatedAtDesc(status).stream()
-                .map(repairOrderMapper::toResponse)
-                .toList();
+        java.util.Set<String> allowedFields = java.util.Set.of(
+            "id", "orderNumber", "status", "priority", "receivedAt", "completedAt", "deliveredAt", "createdAt", "updatedAt"
+        );
+        org.springframework.data.domain.Pageable pageable = com.berke.cra.minidesk.common.pagination.PaginationUtils.createPageable(
+            page, size, sortBy, sortDirection, allowedFields
+        );
+
+        org.springframework.data.jpa.domain.Specification<RepairOrder> spec = RepairOrderSpecifications.filterRepairOrders(
+            null, status, priority, null, deviceId, null, null
+        );
+
+        org.springframework.data.domain.Page<RepairOrder> orderPage = repairOrderRepository.findAll(spec, pageable);
+
+        return com.berke.cra.minidesk.common.pagination.PageResponse.fromPage(orderPage, repairOrderMapper::toResponse);
     }
 
     @Transactional
@@ -182,7 +222,7 @@ public class RepairOrderService {
             String token = UUID.randomUUID().toString()
                     .replace("-", "")
                     .substring(0, 8)
-                    .toUpperCase();
+                    .toUpperCase(java.util.Locale.ROOT);
             String candidate = "CRA-" + datePart + "-" + token;
             if (!repairOrderRepository.existsByOrderNumber(candidate)) {
                 return candidate;

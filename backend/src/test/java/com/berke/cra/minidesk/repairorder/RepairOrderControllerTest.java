@@ -12,6 +12,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import com.berke.cra.minidesk.testsupport.PostgresIntegrationTest;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
@@ -21,6 +22,7 @@ import java.util.List;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
@@ -35,9 +37,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@SpringBootTest
 @AutoConfigureMockMvc
-class RepairOrderControllerTest {
+class RepairOrderControllerTest extends PostgresIntegrationTest {
 
     @Autowired
     private MockMvc mockMvc;
@@ -112,14 +113,16 @@ class RepairOrderControllerTest {
                 "Broken keyboard", null, null, RepairOrderStatus.RECEIVED, RepairPriority.NORMAL,
                 null, null, Instant.now(), null, null, Instant.now(), Instant.now()
         );
-
-        when(repairOrderService.getAllRepairOrders()).thenReturn(List.of(response));
+        com.berke.cra.minidesk.common.pagination.PageResponse<RepairOrderResponse> pageResponse = new com.berke.cra.minidesk.common.pagination.PageResponse<>(
+            List.of(response), 0, 20, 1L, 1, true, true, false, false
+        );
+        when(repairOrderService.searchRepairOrders(null, null, null, null, null, null, null, 0, 20, "createdAt", "desc")).thenReturn(pageResponse);
 
         mockMvc.perform(get("/api/repair-orders"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success", is(true)))
-                .andExpect(jsonPath("$.data", hasSize(1)))
-                .andExpect(jsonPath("$.data[0].id", is(10)));
+                .andExpect(jsonPath("$.data.content", hasSize(1)))
+                .andExpect(jsonPath("$.data.content[0].id", is(10)));
     }
 
     @Test
@@ -176,14 +179,16 @@ class RepairOrderControllerTest {
                 "Broken keyboard", null, null, RepairOrderStatus.RECEIVED, RepairPriority.NORMAL,
                 null, null, Instant.now(), null, null, Instant.now(), Instant.now()
         );
-
-        when(repairOrderService.getRepairOrdersByDeviceId(deviceId)).thenReturn(List.of(response));
+        com.berke.cra.minidesk.common.pagination.PageResponse<RepairOrderResponse> pageResponse = new com.berke.cra.minidesk.common.pagination.PageResponse<>(
+            List.of(response), 0, 20, 1L, 1, true, true, false, false
+        );
+        when(repairOrderService.searchRepairOrdersByDevice(deviceId, null, null, 0, 20, "createdAt", "desc")).thenReturn(pageResponse);
 
         mockMvc.perform(get("/api/devices/{deviceId}/repair-orders", deviceId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success", is(true)))
-                .andExpect(jsonPath("$.data", hasSize(1)))
-                .andExpect(jsonPath("$.data[0].deviceId", is(1)));
+                .andExpect(jsonPath("$.data.content", hasSize(1)))
+                .andExpect(jsonPath("$.data.content[0].deviceId", is(1)));
     }
 
     @Test
@@ -194,14 +199,16 @@ class RepairOrderControllerTest {
                 "Broken keyboard", null, null, status, RepairPriority.NORMAL,
                 null, null, Instant.now(), null, null, Instant.now(), Instant.now()
         );
-
-        when(repairOrderService.getRepairOrdersByStatus(status)).thenReturn(List.of(response));
+        com.berke.cra.minidesk.common.pagination.PageResponse<RepairOrderResponse> pageResponse = new com.berke.cra.minidesk.common.pagination.PageResponse<>(
+            List.of(response), 0, 20, 1L, 1, true, true, false, false
+        );
+        when(repairOrderService.searchRepairOrders(null, status, null, null, null, null, null, 0, 20, "createdAt", "desc")).thenReturn(pageResponse);
 
         mockMvc.perform(get("/api/repair-orders").param("status", "RECEIVED"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success", is(true)))
-                .andExpect(jsonPath("$.data", hasSize(1)))
-                .andExpect(jsonPath("$.data[0].status", is("RECEIVED")));
+                .andExpect(jsonPath("$.data.content", hasSize(1)))
+                .andExpect(jsonPath("$.data.content[0].status", is("RECEIVED")));
     }
 
     @Test
@@ -295,5 +302,142 @@ class RepairOrderControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.success", is(false)))
                 .andExpect(jsonPath("$.message", is("Cannot delete repair order in status IN_REPAIR.")));
+    }
+
+    @Test
+    void shouldReturn400ForInvalidSortingInOrders() throws Exception {
+        when(repairOrderService.searchRepairOrders(any(), any(), any(), any(), any(), any(), any(), anyInt(), anyInt(), eq("invalidField"), any()))
+                .thenThrow(new IllegalArgumentException("Sorting by field 'invalidField' is not supported"));
+
+        mockMvc.perform(get("/api/repair-orders").param("sortBy", "invalidField"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success", is(false)))
+                .andExpect(jsonPath("$.message", is("Sorting by field 'invalidField' is not supported")));
+    }
+
+    @Test
+    void shouldReturn400ForInvalidDirectionInOrders() throws Exception {
+        when(repairOrderService.searchRepairOrders(any(), any(), any(), any(), any(), any(), any(), anyInt(), anyInt(), any(), eq("invalidDir")))
+                .thenThrow(new IllegalArgumentException("Sort direction 'invalidDir' is not supported"));
+
+        mockMvc.perform(get("/api/repair-orders").param("sortDirection", "invalidDir"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success", is(false)))
+                .andExpect(jsonPath("$.message", is("Sort direction 'invalidDir' is not supported")));
+    }
+
+    @Test
+    void shouldReturn400ForNegativePageInOrders() throws Exception {
+        when(repairOrderService.searchRepairOrders(any(), any(), any(), any(), any(), any(), any(), eq(-1), anyInt(), any(), any()))
+                .thenThrow(new IllegalArgumentException("Page index must not be negative"));
+
+        mockMvc.perform(get("/api/repair-orders").param("page", "-1"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success", is(false)))
+                .andExpect(jsonPath("$.message", is("Page index must not be negative")));
+    }
+
+    @Test
+    void shouldReturn400ForZeroSizeInOrders() throws Exception {
+        when(repairOrderService.searchRepairOrders(any(), any(), any(), any(), any(), any(), any(), anyInt(), eq(0), any(), any()))
+                .thenThrow(new IllegalArgumentException("Page size must not be less than 1"));
+
+        mockMvc.perform(get("/api/repair-orders").param("size", "0"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success", is(false)))
+                .andExpect(jsonPath("$.message", is("Page size must not be less than 1")));
+    }
+
+    @Test
+    void shouldReturn400ForLargeSizeInOrders() throws Exception {
+        when(repairOrderService.searchRepairOrders(any(), any(), any(), any(), any(), any(), any(), anyInt(), eq(101), any(), any()))
+                .thenThrow(new IllegalArgumentException("Page size must not be greater than 100"));
+
+        mockMvc.perform(get("/api/repair-orders").param("size", "101"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success", is(false)))
+                .andExpect(jsonPath("$.message", is("Page size must not be greater than 100")));
+    }
+
+    @Test
+    void shouldReturn400ForInvalidDateRangeInOrders() throws Exception {
+        Instant from = Instant.parse("2026-08-01T00:00:00Z");
+        Instant to = Instant.parse("2026-07-01T00:00:00Z");
+        when(repairOrderService.searchRepairOrders(any(), any(), any(), any(), any(), eq(from), eq(to), anyInt(), anyInt(), any(), any()))
+                .thenThrow(new IllegalArgumentException("createdFrom must be before createdTo"));
+
+        mockMvc.perform(get("/api/repair-orders")
+                .param("createdFrom", "2026-08-01T00:00:00Z")
+                .param("createdTo", "2026-07-01T00:00:00Z"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success", is(false)))
+                .andExpect(jsonPath("$.message", is("createdFrom must be before createdTo")));
+    }
+
+    @Test
+    void shouldReturn404ForMissingDeviceInNestedOrders() throws Exception {
+        Long deviceId = 999L;
+        when(repairOrderService.searchRepairOrdersByDevice(eq(deviceId), any(), any(), anyInt(), anyInt(), any(), any()))
+                .thenThrow(new ResourceNotFoundException("Device with ID 999 not found"));
+
+        mockMvc.perform(get("/api/devices/{deviceId}/repair-orders", deviceId))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.success", is(false)))
+                .andExpect(jsonPath("$.message", is("Device with ID 999 not found")));
+    }
+
+    @Test
+    void shouldReturn400OnInvalidEnumMapping() throws Exception {
+        mockMvc.perform(get("/api/repair-orders").param("status", "INVALID"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success", is(false)))
+                .andExpect(jsonPath("$.message", is("Invalid request parameter value")));
+    }
+
+    @Test
+    void shouldReturn400OnInvalidInstantMapping() throws Exception {
+        mockMvc.perform(get("/api/repair-orders").param("createdFrom", "invalid"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success", is(false)))
+                .andExpect(jsonPath("$.message", is("Invalid request parameter value")));
+    }
+
+    @Test
+    void shouldAcceptSearchOrdersQueryParamsAndReturnPageResponse() throws Exception {
+        RepairOrderResponse response = new RepairOrderResponse(
+                10L, "CRA-20260716-12345678", 1L, "Dell", "Latitude", 2L, "Jane Doe",
+                "Broken keyboard", null, null, RepairOrderStatus.RECEIVED, RepairPriority.HIGH,
+                null, null, Instant.now(), null, null, Instant.now(), Instant.now()
+        );
+        com.berke.cra.minidesk.common.pagination.PageResponse<RepairOrderResponse> pageResponse = new com.berke.cra.minidesk.common.pagination.PageResponse<>(
+            List.of(response), 0, 5, 1L, 1, true, true, false, false
+        );
+
+        Instant from = Instant.parse("2026-07-01T00:00:00Z");
+        Instant to = Instant.parse("2026-08-01T00:00:00Z");
+        when(repairOrderService.searchRepairOrders("Dell", RepairOrderStatus.RECEIVED, RepairPriority.HIGH, null, null, from, to, 0, 5, "orderNumber", "asc")).thenReturn(pageResponse);
+
+        mockMvc.perform(get("/api/repair-orders")
+                .param("query", "Dell")
+                .param("status", "RECEIVED")
+                .param("priority", "HIGH")
+                .param("createdFrom", "2026-07-01T00:00:00Z")
+                .param("createdTo", "2026-08-01T00:00:00Z")
+                .param("page", "0")
+                .param("size", "5")
+                .param("sortBy", "orderNumber")
+                .param("sortDirection", "asc"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success", is(true)))
+                .andExpect(jsonPath("$.data.content", hasSize(1)))
+                .andExpect(jsonPath("$.data.content[0].orderNumber", is("CRA-20260716-12345678")))
+                .andExpect(jsonPath("$.data.page", is(0)))
+                .andExpect(jsonPath("$.data.size", is(5)))
+                .andExpect(jsonPath("$.data.totalElements", is(1)))
+                .andExpect(jsonPath("$.data.totalPages", is(1)))
+                .andExpect(jsonPath("$.data.first", is(true)))
+                .andExpect(jsonPath("$.data.last", is(true)))
+                .andExpect(jsonPath("$.data.hasNext", is(false)))
+                .andExpect(jsonPath("$.data.hasPrevious", is(false)));
     }
 }

@@ -38,10 +38,22 @@ public class CustomerService {
     }
 
     @Transactional(readOnly = true)
-    public List<CustomerResponse> getAllCustomers() {
-        return customerRepository.findAll().stream()
-            .map(customerMapper::toResponse)
-            .toList();
+    public com.berke.cra.minidesk.common.pagination.PageResponse<CustomerResponse> searchCustomers(
+            String query,
+            int page,
+            int size,
+            String sortBy,
+            String sortDirection) {
+
+        java.util.Set<String> allowedFields = java.util.Set.of("id", "fullName", "email", "createdAt", "updatedAt");
+        org.springframework.data.domain.Pageable pageable = com.berke.cra.minidesk.common.pagination.PaginationUtils.createPageable(
+            page, size, sortBy, sortDirection, allowedFields
+        );
+
+        org.springframework.data.jpa.domain.Specification<Customer> spec = CustomerSpecifications.hasText(query);
+        org.springframework.data.domain.Page<Customer> customerPage = customerRepository.findAll(spec, pageable);
+
+        return com.berke.cra.minidesk.common.pagination.PageResponse.fromPage(customerPage, customerMapper::toResponse);
     }
 
     @Transactional

@@ -12,6 +12,7 @@ import org.mockito.MockitoAnnotations;
 
 import java.time.Instant;
 import java.util.Optional;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -121,5 +122,66 @@ class CustomerServiceTest {
 
         assertDoesNotThrow(() -> customerService.deleteCustomer(customerId));
         verify(customerRepository, times(1)).deleteById(customerId);
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void shouldSearchCustomersAndReturnPageResponse() {
+        Customer customer = new Customer("John Doe", "john@example.com", "123456", "Some notes");
+        CustomerResponse response = new CustomerResponse(1L, "John Doe", "john@example.com", "123456", "Some notes", Instant.now(), Instant.now());
+        org.springframework.data.domain.Page<Customer> page = new org.springframework.data.domain.PageImpl<>(
+            List.of(customer),
+            org.springframework.data.domain.PageRequest.of(0, 20),
+            1
+        );
+
+        when(customerRepository.findAll(any(org.springframework.data.jpa.domain.Specification.class), any(org.springframework.data.domain.Pageable.class))).thenReturn(page);
+        when(customerMapper.toResponse(customer)).thenReturn(response);
+
+        com.berke.cra.minidesk.common.pagination.PageResponse<CustomerResponse> results = customerService.searchCustomers(
+            "John", 0, 20, "fullName", "asc"
+        );
+
+        assertNotNull(results);
+        assertEquals(1, results.content().size());
+        assertEquals("John Doe", results.content().get(0).fullName());
+        assertEquals(0, results.page());
+        assertEquals(20, results.size());
+        assertEquals(1L, results.totalElements());
+    }
+
+    @Test
+    void shouldRejectSearchWithInvalidSortField() {
+        assertThrows(IllegalArgumentException.class, () ->
+            customerService.searchCustomers(null, 0, 20, "invalidField", "asc")
+        );
+    }
+
+    @Test
+    void shouldRejectSearchWithInvalidSortDirection() {
+        assertThrows(IllegalArgumentException.class, () ->
+            customerService.searchCustomers(null, 0, 20, "fullName", "invalidDir")
+        );
+    }
+
+    @Test
+    void shouldRejectSearchWithNegativePage() {
+        assertThrows(IllegalArgumentException.class, () ->
+            customerService.searchCustomers(null, -1, 20, "fullName", "asc")
+        );
+    }
+
+    @Test
+    void shouldRejectSearchWithZeroSize() {
+        assertThrows(IllegalArgumentException.class, () ->
+            customerService.searchCustomers(null, 0, 0, "fullName", "asc")
+        );
+    }
+
+    @Test
+    void shouldRejectSearchWithLargeSize() {
+        assertThrows(IllegalArgumentException.class, () ->
+            customerService.searchCustomers(null, 0, 101, "fullName", "asc")
+        );
     }
 }

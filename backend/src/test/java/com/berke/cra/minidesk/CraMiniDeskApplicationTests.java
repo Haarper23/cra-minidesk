@@ -1,10 +1,9 @@
 package com.berke.cra.minidesk;
 
+import com.berke.cra.minidesk.testsupport.PostgresIntegrationTest;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
 
-@SpringBootTest
-class CraMiniDeskApplicationTests {
+class CraMiniDeskApplicationTests extends PostgresIntegrationTest {
 
     @Test
     void contextLoads() {

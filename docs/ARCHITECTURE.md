@@ -81,9 +81,18 @@ The platform provides a read-only aggregation layer to summarize operational rep
 
 ---
 
+## 🔢 Search, Filtering, Pagination, and Sorting (Sprint 3B)
+
+To support desktop client rendering of large tables, the platform implements database-level pagination, filtering, and sorting using JPA Specifications and the Criteria API:
+*   **Database-Level Query Execution**: All dynamic query criteria are compiled directly into SQL at execution time. No in-memory list filtering or sorting is performed, which ensures fast response times even as data grows.
+*   **Safe Parameter Checking**: Sort fields are validated against strict allowlists per entity type. Page index must be non-negative, and page sizes are strictly capped between 1 and 100 to prevent out-of-memory issues.
+*   **SQL Wildcard Escaping**: Dynamic text search queries automatically escape special SQL wildcard characters (`\`, `%`, `_`) to prevent search-breakage or malicious pattern injections.
+*   **Error Handling Isolation**: Formatting and conversion errors (e.g. invalid dates, malformed query structures) are intercepted by the Global Exception Handler and mapped to clean HTTP 400 responses, keeping internals hidden.
+
 ## 🔮 Future Modules
 
 To ensure portfolio-grade scalability, the architecture is designed to accommodate the following future enhancements:
-1.  **Notification Hub**: Push notifications, SMS status updates, and email invoice delivery.
-2.  **Part Stock Prediction**: Basic machine learning or statistical forecasting to prompt technicians when inventory drops below historical thresholds.
-3.  **Client Portal**: A light web-based client portal using the same backend APIs for customers to track their device's live repair status.
+1.  Security Access Control: Role-based access controls for service layers.
+2.  Notification Hub: Push notifications, SMS status updates, and email invoice delivery.
+3.  Part Stock Prediction: Basic machine learning or statistical forecasting to prompt technicians when inventory drops below historical thresholds.
+4.  Client Portal: A light web-based client portal using the same backend APIs for customers to track their device's live repair status.
