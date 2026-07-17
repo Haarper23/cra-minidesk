@@ -40,12 +40,20 @@ public class CustomerController {
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<CustomerResponse>>> getAllCustomers() {
-        List<CustomerResponse> customers = customerService.getAllCustomers();
-        ApiResponse<List<CustomerResponse>> response = new ApiResponse<>(
+    public ResponseEntity<ApiResponse<com.berke.cra.minidesk.common.pagination.PageResponse<CustomerResponse>>> getAllCustomers(
+            @org.springframework.web.bind.annotation.RequestParam(value = "query", required = false) String query,
+            @org.springframework.web.bind.annotation.RequestParam(value = "page", defaultValue = "0") int page,
+            @org.springframework.web.bind.annotation.RequestParam(value = "size", defaultValue = "20") int size,
+            @org.springframework.web.bind.annotation.RequestParam(value = "sortBy", defaultValue = "createdAt") String sortBy,
+            @org.springframework.web.bind.annotation.RequestParam(value = "sortDirection", defaultValue = "desc") String sortDirection) {
+
+        com.berke.cra.minidesk.common.pagination.PageResponse<CustomerResponse> pageResponse = customerService.searchCustomers(
+            query, page, size, sortBy, sortDirection
+        );
+        ApiResponse<com.berke.cra.minidesk.common.pagination.PageResponse<CustomerResponse>> response = new ApiResponse<>(
             true,
             "Customers retrieved successfully",
-            customers
+            pageResponse
         );
         return ResponseEntity.ok(response);
     }

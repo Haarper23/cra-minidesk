@@ -86,9 +86,38 @@ curl -X POST http://localhost:8088/api/customers \
   }'
 ```
 
-### 2. List All Customers
+### 2. Search and List Customers (Paginated, Filtered, Sorted)
 ```bash
-curl http://localhost:8088/api/customers
+curl "http://localhost:8088/api/customers?query=Jane&page=0&size=20&sortBy=fullName&sortDirection=asc"
+```
+
+#### Response Payload:
+```json
+{
+  "success": true,
+  "message": "Customers retrieved successfully",
+  "data": {
+    "content": [
+      {
+        "id": 1,
+        "fullName": "Jane Doe",
+        "email": "jane.doe@example.com",
+        "phoneNumber": "+1234567890",
+        "notes": "Prefers morning appointments.",
+        "createdAt": "2026-07-16T12:00:00Z",
+        "updatedAt": "2026-07-16T12:00:00Z"
+      }
+    ],
+    "page": 0,
+    "size": 20,
+    "totalElements": 1,
+    "totalPages": 1,
+    "first": true,
+    "last": true,
+    "hasNext": false,
+    "hasPrevious": false
+  }
+}
 ```
 
 ### 3. Get Customer by ID
@@ -132,9 +161,9 @@ curl -X POST http://localhost:8088/api/customers/1/devices \
   }'
 ```
 
-### 2. List All Devices for Customer
+### 2. Search and List Devices for Customer (Paginated, Filtered, Sorted)
 ```bash
-curl http://localhost:8088/api/customers/1/devices
+curl "http://localhost:8088/api/customers/1/devices?query=MacBook&deviceType=LAPTOP&page=0&size=20&sortBy=model&sortDirection=asc"
 ```
 
 ### 3. Get Device by ID
@@ -180,29 +209,24 @@ curl -X POST http://localhost:8088/api/repair-orders \
   }'
 ```
 
-### 2. List All Repair Orders
+### 2. Search and List Repair Orders (Paginated, Filtered, Sorted)
 ```bash
-curl http://localhost:8088/api/repair-orders
+curl "http://localhost:8088/api/repair-orders?query=Dell&status=RECEIVED&priority=HIGH&customerId=1&deviceId=1&createdFrom=2026-07-01T00:00:00Z&createdTo=2026-08-01T00:00:00Z&page=0&size=20&sortBy=createdAt&sortDirection=desc"
 ```
 
-### 3. Filter Repair Orders by Status
-```bash
-curl http://localhost:8088/api/repair-orders?status=DIAGNOSING
-```
-
-### 4. Get Repair Order by ID
+### 3. Get Repair Order by ID
 ```bash
 curl http://localhost:8088/api/repair-orders/1
 ```
 
-### 5. Get Repair Order by Order Number
+### 4. Get Repair Order by Order Number
 ```bash
 curl http://localhost:8088/api/repair-orders/order-number/CRA-20260716-A1B2C3D4
 ```
 
-### 6. Get Repair Orders for a Device
+### 5. Get Repair Orders for a Device (Paginated, Filtered, Sorted)
 ```bash
-curl http://localhost:8088/api/devices/1/repair-orders
+curl "http://localhost:8088/api/devices/1/repair-orders?status=RECEIVED&priority=HIGH&page=0&size=20&sortBy=createdAt&sortDirection=desc"
 ```
 
 ### 7. Update Repair Details

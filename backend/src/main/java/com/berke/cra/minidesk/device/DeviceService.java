@@ -48,13 +48,32 @@ public class DeviceService {
     }
 
     @Transactional(readOnly = true)
-    public List<DeviceResponse> getDevicesByCustomerId(Long customerId) {
+    public com.berke.cra.minidesk.common.pagination.PageResponse<DeviceResponse> searchDevicesByCustomer(
+            Long customerId,
+            String query,
+            DeviceType deviceType,
+            int page,
+            int size,
+            String sortBy,
+            String sortDirection) {
+
         if (!customerRepository.existsById(customerId)) {
             throw new ResourceNotFoundException("Customer with ID " + customerId + " not found");
         }
-        return deviceRepository.findByCustomerIdOrderByCreatedAtDesc(customerId).stream()
-                .map(deviceMapper::toResponse)
-                .toList();
+
+        java.util.Set<String> allowedFields = java.util.Set.of("id", "brand", "model", "deviceType", "createdAt", "updatedAt");
+        org.springframework.data.domain.Pageable pageable = com.berke.cra.minidesk.common.pagination.PaginationUtils.createPageable(
+            page, size, sortBy, sortDirection, allowedFields
+        );
+
+        org.springframework.data.jpa.domain.Specification<Device> spec = org.springframework.data.jpa.domain.Specification
+            .where(DeviceSpecifications.hasCustomerId(customerId))
+            .and(DeviceSpecifications.hasDeviceType(deviceType))
+            .and(DeviceSpecifications.hasText(query));
+
+        org.springframework.data.domain.Page<Device> devicePage = deviceRepository.findAll(spec, pageable);
+
+        return com.berke.cra.minidesk.common.pagination.PageResponse.fromPage(devicePage, deviceMapper::toResponse);
     }
 
     @Transactional(readOnly = true)

@@ -183,6 +183,7 @@ class RepairOrderServiceTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     void shouldReturnRepairOrdersByDevice() {
         Long deviceId = 1L;
         RepairOrder order = new RepairOrder();
@@ -193,17 +194,21 @@ class RepairOrderServiceTest {
         );
 
         when(deviceRepository.existsById(deviceId)).thenReturn(true);
-        when(repairOrderRepository.findByDeviceIdOrderByCreatedAtDesc(deviceId)).thenReturn(List.of(order));
+        org.springframework.data.domain.Page<RepairOrder> orderPage = new org.springframework.data.domain.PageImpl<>(List.of(order));
+        when(repairOrderRepository.findAll(any(org.springframework.data.jpa.domain.Specification.class), any(org.springframework.data.domain.Pageable.class))).thenReturn(orderPage);
         when(repairOrderMapper.toResponse(order)).thenReturn(response);
 
-        List<RepairOrderResponse> results = repairOrderService.getRepairOrdersByDeviceId(deviceId);
+        com.berke.cra.minidesk.common.pagination.PageResponse<RepairOrderResponse> results = repairOrderService.searchRepairOrdersByDevice(
+            deviceId, null, null, 0, 20, "createdAt", "desc"
+        );
 
         assertNotNull(results);
-        assertEquals(1, results.size());
-        assertEquals(deviceId, results.getFirst().deviceId());
+        assertEquals(1, results.content().size());
+        assertEquals(deviceId, results.content().getFirst().deviceId());
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     void shouldReturnRepairOrdersByStatus() {
         RepairOrderStatus status = RepairOrderStatus.RECEIVED;
         RepairOrder order = new RepairOrder();
@@ -213,14 +218,17 @@ class RepairOrderServiceTest {
                 null, null, Instant.now(), null, null, Instant.now(), Instant.now()
         );
 
-        when(repairOrderRepository.findByStatusOrderByCreatedAtDesc(status)).thenReturn(List.of(order));
+        org.springframework.data.domain.Page<RepairOrder> orderPage = new org.springframework.data.domain.PageImpl<>(List.of(order));
+        when(repairOrderRepository.findAll(any(org.springframework.data.jpa.domain.Specification.class), any(org.springframework.data.domain.Pageable.class))).thenReturn(orderPage);
         when(repairOrderMapper.toResponse(order)).thenReturn(response);
 
-        List<RepairOrderResponse> results = repairOrderService.getRepairOrdersByStatus(status);
+        com.berke.cra.minidesk.common.pagination.PageResponse<RepairOrderResponse> results = repairOrderService.searchRepairOrders(
+            null, status, null, null, null, null, null, 0, 20, "createdAt", "desc"
+        );
 
         assertNotNull(results);
-        assertEquals(1, results.size());
-        assertEquals(status, results.getFirst().status());
+        assertEquals(1, results.content().size());
+        assertEquals(status, results.content().getFirst().status());
     }
 
     @Test
@@ -341,7 +349,7 @@ class RepairOrderServiceTest {
         when(repairOrderRepository.findById(orderId)).thenReturn(Optional.of(order));
 
         assertThrows(IllegalArgumentException.class, () -> repairOrderService.deleteRepairOrder(orderId));
-        verify(repairOrderRepository, never()).delete(any());
+        verify(repairOrderRepository, never()).delete(any(RepairOrder.class));
     }
 
     @Test
@@ -544,5 +552,67 @@ class RepairOrderServiceTest {
         assertThrows(IllegalArgumentException.class, () -> repairOrderService.deleteRepairOrder(orderId));
         // Deletion events must not be recorded (should not invoke any timeline service record call)
         verify(repairOrderTimelineService, never()).recordStatusChanged(any(), any(), any());
+    }
+
+    @Test
+    void shouldRejectOrderSearchWithInvalidSortField() {
+        assertThrows(IllegalArgumentException.class, () ->
+            repairOrderService.searchRepairOrders(null, null, null, null, null, null, null, 0, 20, "invalidField", "asc")
+        );
+    }
+
+    @Test
+    void shouldRejectOrderSearchWithInvalidSortDirection() {
+        assertThrows(IllegalArgumentException.class, () ->
+            repairOrderService.searchRepairOrders(null, null, null, null, null, null, null, 0, 20, "orderNumber", "invalidDir")
+        );
+    }
+
+    @Test
+    void shouldRejectOrderSearchWithNegativePage() {
+        assertThrows(IllegalArgumentException.class, () ->
+            repairOrderService.searchRepairOrders(null, null, null, null, null, null, null, -1, 20, "orderNumber", "asc")
+        );
+    }
+
+    @Test
+    void shouldRejectOrderSearchWithZeroSize() {
+        assertThrows(IllegalArgumentException.class, () ->
+            repairOrderService.searchRepairOrders(null, null, null, null, null, null, null, 0, 0, "orderNumber", "asc")
+        );
+    }
+
+    @Test
+    void shouldRejectOrderSearchWithLargeSize() {
+        assertThrows(IllegalArgumentException.class, () ->
+            repairOrderService.searchRepairOrders(null, null, null, null, null, null, null, 0, 101, "orderNumber", "asc")
+        );
+    }
+
+    @Test
+    void shouldRejectOrderSearchWithInvalidDateRange() {
+        Instant from = Instant.parse("2026-08-01T00:00:00Z");
+        Instant to = Instant.parse("2026-07-01T00:00:00Z");
+        assertThrows(IllegalArgumentException.class, () ->
+            repairOrderService.searchRepairOrders(null, null, null, null, null, from, to, 0, 20, "orderNumber", "asc")
+        );
+    }
+
+    @Test
+    void shouldRejectOrderSearchWithEqualDates() {
+        Instant same = Instant.parse("2026-07-01T00:00:00Z");
+        assertThrows(IllegalArgumentException.class, () ->
+            repairOrderService.searchRepairOrders(null, null, null, null, null, same, same, 0, 20, "orderNumber", "asc")
+        );
+    }
+
+    @Test
+    void shouldThrowNotFoundForMissingDeviceInNestedOrderSearch() {
+        Long deviceId = 999L;
+        when(deviceRepository.existsById(deviceId)).thenReturn(false);
+
+        assertThrows(ResourceNotFoundException.class, () ->
+            repairOrderService.searchRepairOrdersByDevice(deviceId, null, null, 0, 20, "orderNumber", "asc")
+        );
     }
 }

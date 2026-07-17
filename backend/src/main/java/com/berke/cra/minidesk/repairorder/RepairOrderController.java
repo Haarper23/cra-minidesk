@@ -42,18 +42,26 @@ public class RepairOrderController {
     }
 
     @GetMapping("/api/repair-orders")
-    public ResponseEntity<ApiResponse<List<RepairOrderResponse>>> getAllRepairOrders(
-            @RequestParam(value = "status", required = false) RepairOrderStatus status) {
-        List<RepairOrderResponse> orders;
-        if (status != null) {
-            orders = repairOrderService.getRepairOrdersByStatus(status);
-        } else {
-            orders = repairOrderService.getAllRepairOrders();
-        }
-        ApiResponse<List<RepairOrderResponse>> response = new ApiResponse<>(
-                true,
-                "Repair orders retrieved successfully",
-                orders
+    public ResponseEntity<ApiResponse<com.berke.cra.minidesk.common.pagination.PageResponse<RepairOrderResponse>>> getAllRepairOrders(
+            @RequestParam(value = "query", required = false) String query,
+            @RequestParam(value = "status", required = false) RepairOrderStatus status,
+            @RequestParam(value = "priority", required = false) RepairPriority priority,
+            @RequestParam(value = "customerId", required = false) Long customerId,
+            @RequestParam(value = "deviceId", required = false) Long deviceId,
+            @RequestParam(value = "createdFrom", required = false) java.time.Instant createdFrom,
+            @RequestParam(value = "createdTo", required = false) java.time.Instant createdTo,
+            @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "size", defaultValue = "20") int size,
+            @RequestParam(value = "sortBy", defaultValue = "createdAt") String sortBy,
+            @RequestParam(value = "sortDirection", defaultValue = "desc") String sortDirection) {
+
+        com.berke.cra.minidesk.common.pagination.PageResponse<RepairOrderResponse> pageResponse = repairOrderService.searchRepairOrders(
+            query, status, priority, customerId, deviceId, createdFrom, createdTo, page, size, sortBy, sortDirection
+        );
+        ApiResponse<com.berke.cra.minidesk.common.pagination.PageResponse<RepairOrderResponse>> response = new ApiResponse<>(
+            true,
+            "Repair orders retrieved successfully",
+            pageResponse
         );
         return ResponseEntity.ok(response);
     }
@@ -83,13 +91,22 @@ public class RepairOrderController {
     }
 
     @GetMapping("/api/devices/{deviceId}/repair-orders")
-    public ResponseEntity<ApiResponse<List<RepairOrderResponse>>> getRepairOrdersByDeviceId(
-            @PathVariable Long deviceId) {
-        List<RepairOrderResponse> orders = repairOrderService.getRepairOrdersByDeviceId(deviceId);
-        ApiResponse<List<RepairOrderResponse>> response = new ApiResponse<>(
-                true,
-                "Repair orders retrieved successfully",
-                orders
+    public ResponseEntity<ApiResponse<com.berke.cra.minidesk.common.pagination.PageResponse<RepairOrderResponse>>> getRepairOrdersByDeviceId(
+            @PathVariable Long deviceId,
+            @RequestParam(value = "status", required = false) RepairOrderStatus status,
+            @RequestParam(value = "priority", required = false) RepairPriority priority,
+            @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "size", defaultValue = "20") int size,
+            @RequestParam(value = "sortBy", defaultValue = "createdAt") String sortBy,
+            @RequestParam(value = "sortDirection", defaultValue = "desc") String sortDirection) {
+
+        com.berke.cra.minidesk.common.pagination.PageResponse<RepairOrderResponse> pageResponse = repairOrderService.searchRepairOrdersByDevice(
+            deviceId, status, priority, page, size, sortBy, sortDirection
+        );
+        ApiResponse<com.berke.cra.minidesk.common.pagination.PageResponse<RepairOrderResponse>> response = new ApiResponse<>(
+            true,
+            "Repair orders retrieved successfully",
+            pageResponse
         );
         return ResponseEntity.ok(response);
     }
