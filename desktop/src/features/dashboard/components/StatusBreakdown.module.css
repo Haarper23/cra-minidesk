@@ -1,0 +1,134 @@
+.container {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.totalBadge {
+  font-size: 12px;
+  font-weight: 600;
+  background-color: var(--bg-surface-subtle);
+  color: var(--text-muted);
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: var(--space-md);
+}
+
+.item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background-color: var(--bg-app);
+  border: 1px solid var(--border-color);
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-md);
+}
+
+.itemMeta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.badge {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+}
+
+.count {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.barBackground {
+  height: 6px;
+  background-color: var(--border-color);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.barFill {
+  height: 100%;
+  border-radius: var(--radius-full);
+  transition: width 0.3s ease;
+}
+
+/* Badge & Fill Colors */
+.info {
+  background-color: var(--color-info-bg);
+  color: var(--color-info);
+}
+
+.fill_info {
+  background-color: var(--color-info);
+}
+
+.warning {
+  background-color: var(--color-warning-bg);
+  color: var(--color-warning);
+}
+
+.fill_warning {
+  background-color: var(--color-warning);
+}
+
+.primary {
+  background-color: var(--color-primary-light);
+  color: var(--color-primary);
+}
+
+.fill_primary {
+  background-color: var(--color-primary);
+}
+
+.success {
+  background-color: var(--color-success-bg);
+  color: var(--color-success);
+}
+
+.fill_success {
+  background-color: var(--color-success);
+}
+
+.neutral {
+  background-color: var(--bg-surface-subtle);
+  color: var(--text-muted);
+}
+
+.fill_neutral {
+  background-color: var(--text-muted);
+}
+
+.danger {
+  background-color: var(--color-error-bg);
+  color: var(--color-error);
+}
+
+.fill_danger {
+  background-color: var(--color-error);
+}

@@ -1,0 +1,171 @@
+.loadingContainer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+.skeleton {
+  background-color: #e2e8f0;
+  border-radius: var(--radius-md);
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.skeletonHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.skeletonTitle {
+  width: 220px;
+  height: 28px;
+}
+
+.skeletonButton {
+  width: 100px;
+  height: 36px;
+}
+
+.skeletonGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--space-md);
+}
+
+.skeletonCard {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  padding: var(--space-md);
+  border-radius: var(--radius-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.skeletonCardTitle {
+  width: 60%;
+  height: 16px;
+}
+
+.skeletonCardValue {
+  width: 40%;
+  height: 32px;
+}
+
+.skeletonBlock {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  padding: var(--space-lg);
+  border-radius: var(--radius-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.skeletonBlockHeader {
+  width: 180px;
+  height: 22px;
+}
+
+.skeletonRowGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-sm);
+}
+
+.skeletonRow {
+  height: 48px;
+}
+
+/* Error State */
+.errorContainer {
+  background: var(--bg-surface);
+  border: 1px solid var(--color-error-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-xl);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  max-width: 540px;
+  margin: var(--space-xl) auto;
+}
+
+.errorIcon {
+  color: var(--color-error);
+  margin-bottom: var(--space-md);
+}
+
+.errorTitle {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-main);
+  margin-bottom: var(--space-xs);
+}
+
+.errorMessage {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-bottom: var(--space-lg);
+  line-height: 1.6;
+}
+
+.retryButton {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+  background-color: var(--color-primary);
+  color: #ffffff;
+  padding: 8px 16px;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  font-size: 13px;
+  transition: background-color 0.15s ease;
+}
+
+.retryButton:hover {
+  background-color: var(--color-primary-hover);
+}
+
+/* Empty State */
+.emptyContainer {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: var(--space-xl);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  margin: var(--space-lg) 0;
+}
+
+.emptyIcon {
+  color: var(--text-subtle);
+  margin-bottom: var(--space-sm);
+}
+
+.emptyTitle {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-main);
+  margin-bottom: var(--space-xs);
+}
+
+.emptyMessage {
+  font-size: 13px;
+  color: var(--text-muted);
+  max-width: 420px;
+}
