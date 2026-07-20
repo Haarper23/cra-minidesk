@@ -146,7 +146,9 @@ describe('DashboardPage Contract & Connection State', () => {
       expect(screen.getByText('2')).toBeInTheDocument();
     });
 
-    const refreshButton = screen.getByRole('button', { name: /Gösterge paneli verilerini yenile/i });
+    const refreshButton = screen.getByRole('button', {
+      name: /Gösterge paneli verilerini yenile/i,
+    });
     fireEvent.click(refreshButton);
 
     expect(dashboardApi.fetchDashboardStatistics).toHaveBeenCalledTimes(2);

@@ -33,15 +33,15 @@ The CRA MiniDesk architecture is divided into a robust, secure backend and a nat
 cra-minidesk/
 ├── .github/
 │   └── workflows/          # GitHub Actions CI/CD pipelines
-├── backend/                # Java 21 Spring Boot REST API (222 tests)
+├── backend/                # Java 21 Spring Boot REST API (224 tests)
 │   └── README.md
-├── desktop/                # React / TypeScript / Tauri desktop client (Sprint 5A)
+├── desktop/                # React / TypeScript / Tauri desktop client (Sprint 5B)
 │   └── README.md
 ├── docs/                   # Exhaustive project documentation
 │   ├── ARCHITECTURE.md     # Architectural patterns and system flow
 │   ├── SECURITY.md         # Secure coding rules and constraints
 │   ├── ROADMAP.md          # Multi-sprint delivery plan
-│   └── DEVELOPMENT.md      # Setup, local testing, and tools list
+    └── DEVELOPMENT.md      # Setup, local testing, and tools list
 ├── docker-compose.yml      # Local development database orchestration
 ├── .gitignore              # Standard ignore configurations (IDE, Node, Java, macOS)
 └── README.md               # Main project README (this file)
@@ -57,7 +57,7 @@ cra-minidesk/
   - [x] Repair order workflow & timeline API
   - [x] Dashboard statistics API
   - [x] Search, filtering, pagination & sorting
-  - [x] PostgreSQL Testcontainers (222 backend automated tests passing)
+  - [x] PostgreSQL Testcontainers (224 backend automated tests passing)
 
 - **Sprint 5A — React + Tauri Desktop Foundation**:
   - [x] Tauri 2 native desktop application shell (`com.berke.cra-minidesk`)
@@ -65,10 +65,16 @@ cra-minidesk/
   - [x] All-Turkish UI navigation & feedback components
   - [x] Live Dashboard screen connected to Spring Boot backend (`/api/dashboard`)
   - [x] Runtime Zod schema validation & fetch API client with timeout and typed errors
-  - [x] Module placeholder screens (`/customers`, `/devices`, `/repair-orders`)
-  - [x] 21 automated frontend unit and integration tests passing
-  - [x] Production Vite build & Tauri debug bundle (`CRA MiniDesk.app` & `.dmg`)
-  - [ ] Authentication (Not implemented yet - scheduled for future sprint)
+
+- **Sprint 5B — Customer Desktop UI**:
+  - [x] Production-ready Customer Management module (`/customers`)
+  - [x] Real-time free-text customer search (name, email, phone) with 350ms input debounce
+  - [x] Column header sorting (fullName, email, createdAt, updatedAt) & 1-based UI pagination
+  - [x] Accessible modal dialogs for Create Customer and Edit Customer with inline Zod validation
+  - [x] Confirmation modal dialog for Delete Customer with relationship warning
+  - [x] Route search parameter persistence (`?query=...&page=0&sortBy=createdAt&sortDirection=desc`)
+  - [x] 49 automated frontend unit and integration tests passing
+  - [x] Module placeholder screens (`/devices`, `/repair-orders`) remain upcoming
 
 ---
 

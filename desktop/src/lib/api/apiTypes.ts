@@ -9,10 +9,12 @@ export interface ApiResponse<T = unknown> {
 
 export interface PageResponse<T> {
   content: T[];
-  pageNumber: number;
-  pageSize: number;
+  page: number;
+  size: number;
   totalElements: number;
   totalPages: number;
-  isFirst: boolean;
-  isLast: boolean;
+  first: boolean;
+  last: boolean;
+  hasNext: boolean;
+  hasPrevious: boolean;
 }

@@ -2,6 +2,7 @@ package com.berke.cra.minidesk.common.error;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -22,6 +23,13 @@ public class GlobalExceptionHandler {
         log.warn("Resource not found: {}", ex.getMessage());
         ApiErrorResponse error = new ApiErrorResponse(ex.getMessage());
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+    }
+
+    @ExceptionHandler(ResourceConflictException.class)
+    public ResponseEntity<ApiErrorResponse> handleResourceConflict(ResourceConflictException ex) {
+        log.warn("Resource conflict encountered: {}", ex.getMessage());
+        ApiErrorResponse error = new ApiErrorResponse(ex.getMessage());
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
@@ -61,6 +69,13 @@ public class GlobalExceptionHandler {
         log.warn("HTTP method not supported: {}", ex.getMessage());
         ApiErrorResponse error = new ApiErrorResponse("HTTP method not allowed");
         return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED).body(error);
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ApiErrorResponse> handleDataIntegrityViolation(DataIntegrityViolationException ex) {
+        log.warn("Data integrity violation encountered: {}", ex.getMessage());
+        ApiErrorResponse error = new ApiErrorResponse("Customer cannot be deleted because related devices or repair orders exist");
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
     }
 
     @ExceptionHandler(Exception.class)

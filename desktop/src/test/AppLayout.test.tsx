@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { createMemoryRouter, RouterProvider } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AppLayout } from '../components/layout/AppLayout';
 import { CustomersPage } from '../features/customers/pages/CustomersPage';
 import { DevicesPage } from '../features/devices/pages/DevicesPage';
@@ -8,7 +9,16 @@ import { RepairOrdersPage } from '../features/repair-orders/pages/RepairOrdersPa
 import { NotFoundPage } from '../pages/NotFoundPage';
 import { BackendStatusProvider } from '../app/BackendStatusProvider';
 
+function createTestQueryClient() {
+  return new QueryClient({
+    defaultOptions: {
+      queries: { retry: false, gcTime: 0 },
+    },
+  });
+}
+
 function renderWithRouter(initialEntries: string[]) {
+  const queryClient = createTestQueryClient();
   const router = createMemoryRouter(
     [
       {
@@ -27,9 +37,11 @@ function renderWithRouter(initialEntries: string[]) {
   );
 
   return render(
-    <BackendStatusProvider>
-      <RouterProvider router={router} />
-    </BackendStatusProvider>
+    <QueryClientProvider client={queryClient}>
+      <BackendStatusProvider>
+        <RouterProvider router={router} />
+      </BackendStatusProvider>
+    </QueryClientProvider>
   );
 }
 
@@ -52,11 +64,10 @@ describe('AppLayout and Navigation', () => {
     expect(activeLink).toHaveClass(/active/);
   });
 
-  it('renders customer placeholder route with Turkish status notes', () => {
+  it('renders customer route header', () => {
     renderWithRouter(['/customers']);
 
-    expect(screen.getByText('Müşteri Yönetimi Modülü')).toBeInTheDocument();
-    expect(screen.getByText(/Sprint 5B/)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Müşteri Yönetimi' })).toBeInTheDocument();
   });
 
   it('renders devices placeholder route', () => {

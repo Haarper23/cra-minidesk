@@ -28,6 +28,8 @@ export class ApiError extends Error {
       case 'VALIDATION_ERROR':
         return 'Sunucudan alınan veri beklenen formata uymuyor.';
       case 'HTTP_ERROR':
+        if (status === 409)
+          return 'Bu müşteri, bağlı cihazları veya servis kayıtları bulunduğu için silinemiyor.';
         if (status === 404) return 'İstenen kaynak veya servis bulunamadı.';
         if (status === 403 || status === 401) return 'Bu işlem için yetkiniz bulunmamaktadır.';
         if (status && status >= 500)
@@ -47,7 +49,7 @@ export class ApiError extends Error {
   }
 
   public static http(status: number, message: string, userMessage?: string): ApiError {
-    return new ApiError(message, 'HTTP_ERROR', status, userMessage);
+    return new ApiError(message, 'HTTP_ERROR', status, userMessage || message);
   }
 
   public static invalidResponse(message: string): ApiError {
