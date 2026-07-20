@@ -1,24 +1,28 @@
 package com.berke.cra.minidesk.customer;
 
+import com.berke.cra.minidesk.common.error.ResourceConflictException;
 import com.berke.cra.minidesk.common.error.ResourceNotFoundException;
 import com.berke.cra.minidesk.customer.dto.CreateCustomerRequest;
 import com.berke.cra.minidesk.customer.dto.CustomerResponse;
 import com.berke.cra.minidesk.customer.dto.UpdateCustomerRequest;
+import com.berke.cra.minidesk.device.DeviceRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.springframework.dao.DataIntegrityViolationException;
 
 import java.time.Instant;
-import java.util.Optional;
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -31,6 +35,9 @@ class CustomerServiceTest {
 
     @Mock
     private CustomerMapper customerMapper;
+
+    @Mock
+    private DeviceRepository deviceRepository;
 
     @InjectMocks
     private CustomerService customerService;
@@ -116,12 +123,54 @@ class CustomerServiceTest {
     }
 
     @Test
-    void shouldDeleteCustomer() {
+    void shouldDeleteUnreferencedCustomer() {
         Long customerId = 1L;
         when(customerRepository.existsById(customerId)).thenReturn(true);
+        when(deviceRepository.existsByCustomerId(customerId)).thenReturn(false);
 
         assertDoesNotThrow(() -> customerService.deleteCustomer(customerId));
         verify(customerRepository, times(1)).deleteById(customerId);
+        verify(customerRepository, times(1)).flush();
+    }
+
+    @Test
+    void shouldThrowNotFoundOnDeleteForMissingCustomer() {
+        Long customerId = 999L;
+        when(customerRepository.existsById(customerId)).thenReturn(false);
+
+        assertThrows(ResourceNotFoundException.class, () -> customerService.deleteCustomer(customerId));
+        verify(customerRepository, never()).deleteById(any());
+    }
+
+    @Test
+    void shouldThrowConflictOnDeleteWhenCustomerHasDevices() {
+        Long customerId = 1L;
+        when(customerRepository.existsById(customerId)).thenReturn(true);
+        when(deviceRepository.existsByCustomerId(customerId)).thenReturn(true);
+
+        ResourceConflictException ex = assertThrows(
+            ResourceConflictException.class,
+            () -> customerService.deleteCustomer(customerId)
+        );
+
+        assertEquals("Customer cannot be deleted because related devices or repair orders exist", ex.getMessage());
+        verify(customerRepository, never()).deleteById(any());
+    }
+
+    @Test
+    void shouldHandleDataIntegrityViolationOnDeleteAsConflict() {
+        Long customerId = 1L;
+        when(customerRepository.existsById(customerId)).thenReturn(true);
+        when(deviceRepository.existsByCustomerId(customerId)).thenReturn(false);
+        doThrow(new DataIntegrityViolationException("FK constraint violation"))
+            .when(customerRepository).flush();
+
+        ResourceConflictException ex = assertThrows(
+            ResourceConflictException.class,
+            () -> customerService.deleteCustomer(customerId)
+        );
+
+        assertEquals("Customer cannot be deleted because related devices or repair orders exist", ex.getMessage());
     }
 
     @Test

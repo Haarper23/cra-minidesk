@@ -10,6 +10,7 @@ import java.util.Optional;
 @Repository
 public interface DeviceRepository extends JpaRepository<Device, Long>, JpaSpecificationExecutor<Device> {
     List<Device> findByCustomerIdOrderByCreatedAtDesc(Long customerId);
+    boolean existsByCustomerId(Long customerId);
     boolean existsBySerialNumberIgnoreCase(String serialNumber);
     Optional<Device> findBySerialNumberIgnoreCase(String serialNumber);
 }

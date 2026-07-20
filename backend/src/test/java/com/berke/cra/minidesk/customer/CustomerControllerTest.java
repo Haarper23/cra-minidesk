@@ -1,5 +1,6 @@
 package com.berke.cra.minidesk.customer;
 
+import com.berke.cra.minidesk.common.error.ResourceConflictException;
 import com.berke.cra.minidesk.common.error.ResourceNotFoundException;
 import com.berke.cra.minidesk.customer.dto.CreateCustomerRequest;
 import com.berke.cra.minidesk.customer.dto.CustomerResponse;
@@ -18,10 +19,12 @@ import java.util.List;
 
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -143,6 +146,19 @@ class CustomerControllerTest extends PostgresIntegrationTest {
                 .andExpect(status().isNoContent());
 
         verify(customerService, times(1)).deleteCustomer(customerId);
+    }
+
+    @Test
+    void shouldReturn409ForDeleteConflictWhenRelatedDataExists() throws Exception {
+        Long customerId = 1L;
+        doThrow(new ResourceConflictException("Customer cannot be deleted because related devices or repair orders exist"))
+                .when(customerService).deleteCustomer(customerId);
+
+        mockMvc.perform(delete("/api/customers/{id}", customerId))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.success", is(false)))
+                .andExpect(jsonPath("$.message", is("Customer cannot be deleted because related devices or repair orders exist")))
+                .andExpect(jsonPath("$.errors", nullValue()));
     }
 
     @Test

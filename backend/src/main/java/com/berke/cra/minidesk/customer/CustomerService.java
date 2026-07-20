@@ -1,23 +1,29 @@
 package com.berke.cra.minidesk.customer;
 
+import com.berke.cra.minidesk.common.error.ResourceConflictException;
 import com.berke.cra.minidesk.common.error.ResourceNotFoundException;
 import com.berke.cra.minidesk.customer.dto.CreateCustomerRequest;
 import com.berke.cra.minidesk.customer.dto.CustomerResponse;
 import com.berke.cra.minidesk.customer.dto.UpdateCustomerRequest;
+import com.berke.cra.minidesk.device.DeviceRepository;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
 
 @Service
 public class CustomerService {
 
     private final CustomerRepository customerRepository;
     private final CustomerMapper customerMapper;
+    private final DeviceRepository deviceRepository;
 
-    public CustomerService(CustomerRepository customerRepository, CustomerMapper customerMapper) {
+    public CustomerService(
+            CustomerRepository customerRepository,
+            CustomerMapper customerMapper,
+            DeviceRepository deviceRepository) {
         this.customerRepository = customerRepository;
         this.customerMapper = customerMapper;
+        this.deviceRepository = deviceRepository;
     }
 
     @Transactional
@@ -78,6 +84,16 @@ public class CustomerService {
         if (!customerRepository.existsById(id)) {
             throw new ResourceNotFoundException("Customer with ID " + id + " not found");
         }
-        customerRepository.deleteById(id);
+
+        if (deviceRepository.existsByCustomerId(id)) {
+            throw new ResourceConflictException("Customer cannot be deleted because related devices or repair orders exist");
+        }
+
+        try {
+            customerRepository.deleteById(id);
+            customerRepository.flush();
+        } catch (DataIntegrityViolationException ex) {
+            throw new ResourceConflictException("Customer cannot be deleted because related devices or repair orders exist");
+        }
     }
 }

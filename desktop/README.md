@@ -73,6 +73,20 @@ Launches the native **CRA MiniDesk** desktop window connected to Vite live reloa
 
 ---
 
+## 👥 Customer Management Module (Sprint 5B)
+
+The Customer Management module (`/customers`) replaces the earlier placeholder with a production-ready desktop experience:
+
+- **List & Search**: Real-time free-text search across customer full name, email, and phone number with 350ms input debounce and accessible clear button.
+- **Sorting**: Toggle ascending/descending sorts by column headers (`fullName`, `email`, `createdAt`, `updatedAt`).
+- **Pagination**: Zero-based Spring Boot `PageResponse` metadata translation into 1-based UI pages with page bounds protection and automatic regression to previous page upon last item deletion.
+- **Create Customer**: Accessible modal dialog (`CustomerFormDialog`) with client-side Zod validation and safe backend error presentation (e.g. duplicate email conflicts).
+- **Edit Customer**: Modal dialog prefilling existing customer values with state preservation on error.
+- **Delete Customer**: Modal confirmation dialog (`DeleteCustomerDialog`) displaying target customer name and relationship warning.
+- **URL Synchronization**: Route search parameters (`?query=...&page=0&sortBy=createdAt&sortDirection=desc`) persist search and filter states.
+
+---
+
 ## 🧪 Testing & Code Quality
 
 ```bash
@@ -114,7 +128,7 @@ pnpm tauri build --debug
 - **Authentication**: Authentication is **not implemented yet** (planned for future sprints).
 - **Module Status**:
   - `Gösterge Paneli (/dashboard)`: Fully implemented and connected to real Spring Boot backend statistics.
-  - `Müşteriler (/customers)`: Module placeholder for Sprint 5B.
-  - `Cihazlar (/devices)`: Module placeholder for Sprint 5B.
-  - `Servis Kayıtları (/repair-orders)`: Module placeholder for Sprint 5B.
+  - `Müşteriler (/customers)`: Fully implemented in Sprint 5B with CRUD, search, pagination, and sorting.
+  - `Cihazlar (/devices)`: Module placeholder for Sprint 5C.
+  - `Servis Kayıtları (/repair-orders)`: Module placeholder for Sprint 5D.
 - **Common macOS Issues**: If `tauri build` fails on macOS, verify that Xcode Command Line Tools are installed (`xcode-select --install`) and that `pnpm` is active via Corepack (`corepack enable`).
