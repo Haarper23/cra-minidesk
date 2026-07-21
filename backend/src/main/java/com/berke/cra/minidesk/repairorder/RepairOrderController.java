@@ -111,6 +111,28 @@ public class RepairOrderController {
         return ResponseEntity.ok(response);
     }
 
+    @GetMapping("/api/customers/{customerId}/devices/{deviceId}/repair-orders")
+    public ResponseEntity<ApiResponse<com.berke.cra.minidesk.common.pagination.PageResponse<RepairOrderResponse>>> getRepairOrdersByCustomerAndDeviceId(
+            @PathVariable Long customerId,
+            @PathVariable Long deviceId,
+            @RequestParam(value = "status", required = false) RepairOrderStatus status,
+            @RequestParam(value = "priority", required = false) RepairPriority priority,
+            @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "size", defaultValue = "20") int size,
+            @RequestParam(value = "sortBy", defaultValue = "createdAt") String sortBy,
+            @RequestParam(value = "sortDirection", defaultValue = "desc") String sortDirection) {
+
+        com.berke.cra.minidesk.common.pagination.PageResponse<RepairOrderResponse> pageResponse = repairOrderService.searchRepairOrdersByCustomerAndDevice(
+            customerId, deviceId, status, priority, page, size, sortBy, sortDirection
+        );
+        ApiResponse<com.berke.cra.minidesk.common.pagination.PageResponse<RepairOrderResponse>> response = new ApiResponse<>(
+            true,
+            "Repair orders retrieved successfully",
+            pageResponse
+        );
+        return ResponseEntity.ok(response);
+    }
+
     @PutMapping("/api/repair-orders/{id}")
     public ResponseEntity<ApiResponse<RepairOrderResponse>> updateRepairOrder(
             @PathVariable Long id,

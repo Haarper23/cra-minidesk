@@ -77,10 +77,10 @@ describe('AppLayout and Navigation', () => {
     expect(screen.getByRole('heading', { name: 'Cihazlar' })).toBeInTheDocument();
   });
 
-  it('renders repair orders placeholder route', () => {
+  it('renders repair orders route', () => {
     renderWithRouter(['/repair-orders']);
 
-    expect(screen.getByText('Servis Kayıtları Modülü')).toBeInTheDocument();
+    expect(screen.getAllByRole('heading', { name: 'Servis Kayıtları' }).length).toBeGreaterThan(0);
   });
 
   it('renders not found page for unknown route', () => {

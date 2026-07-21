@@ -166,6 +166,9 @@ export const apiClient = {
   put: <T>(endpoint: string, body?: unknown, options?: RequestOptions) =>
     fetchApi<T>(endpoint, { ...options, method: 'PUT', body }),
 
+  patch: <T>(endpoint: string, body?: unknown, options?: RequestOptions) =>
+    fetchApi<T>(endpoint, { ...options, method: 'PATCH', body }),
+
   delete: <T>(endpoint: string, options?: RequestOptions) =>
     fetchApi<T>(endpoint, { ...options, method: 'DELETE' }),
 };

@@ -68,7 +68,7 @@ class RepairOrderServiceTest {
         device.setId(deviceId);
 
         CreateRepairOrderRequest request = new CreateRepairOrderRequest(
-                deviceId, "Screen cracked", RepairPriority.HIGH, "Diagnostic notes", null, new BigDecimal("150.00")
+                null, deviceId, "Screen cracked", RepairPriority.HIGH, "Diagnostic notes", null, new BigDecimal("150.00")
         );
 
         RepairOrder order = new RepairOrder(
@@ -105,7 +105,7 @@ class RepairOrderServiceTest {
         device.setId(deviceId);
 
         CreateRepairOrderRequest request = new CreateRepairOrderRequest(
-                deviceId, "Screen cracked", RepairPriority.HIGH, "Diagnostic notes", null, new BigDecimal("150.00")
+                null, deviceId, "Screen cracked", RepairPriority.HIGH, "Diagnostic notes", null, new BigDecimal("150.00")
         );
 
         RepairOrder order = new RepairOrder(
@@ -135,7 +135,7 @@ class RepairOrderServiceTest {
     void shouldRejectMissingDevice() {
         Long deviceId = 999L;
         CreateRepairOrderRequest request = new CreateRepairOrderRequest(
-                deviceId, "Screen cracked", RepairPriority.HIGH, null, null, null
+                null, deviceId, "Screen cracked", RepairPriority.HIGH, null, null, null
         );
 
         when(deviceRepository.findById(deviceId)).thenReturn(Optional.empty());
@@ -379,7 +379,7 @@ class RepairOrderServiceTest {
         device.setId(deviceId);
 
         CreateRepairOrderRequest request = new CreateRepairOrderRequest(
-                deviceId, "Screen cracked", RepairPriority.HIGH, "Diagnostic notes", null, new BigDecimal("-150.00")
+                null, deviceId, "Screen cracked", RepairPriority.HIGH, "Diagnostic notes", null, new BigDecimal("-150.00")
         );
 
         when(deviceRepository.findById(deviceId)).thenReturn(Optional.of(device));
@@ -402,7 +402,7 @@ class RepairOrderServiceTest {
         device.setId(deviceId);
 
         CreateRepairOrderRequest request = new CreateRepairOrderRequest(
-                deviceId, "Cracked screen", RepairPriority.HIGH, null, null, null
+                null, deviceId, "Cracked screen", RepairPriority.HIGH, null, null, null
         );
 
         RepairOrder order = new RepairOrder(
@@ -424,7 +424,7 @@ class RepairOrderServiceTest {
     void failedCreateDoesNotRecordTimelineEvent() {
         Long deviceId = 999L;
         CreateRepairOrderRequest request = new CreateRepairOrderRequest(
-                deviceId, "Cracked screen", RepairPriority.HIGH, null, null, null
+                null, deviceId, "Cracked screen", RepairPriority.HIGH, null, null, null
         );
 
         when(deviceRepository.findById(deviceId)).thenReturn(Optional.empty());
@@ -532,7 +532,7 @@ class RepairOrderServiceTest {
         device.setId(deviceId);
 
         CreateRepairOrderRequest request = new CreateRepairOrderRequest(
-                deviceId, "Cracked screen", RepairPriority.HIGH, null, null, new BigDecimal("-50.00")
+                null, deviceId, "Cracked screen", RepairPriority.HIGH, null, null, new BigDecimal("-50.00")
         );
 
         when(deviceRepository.findById(deviceId)).thenReturn(Optional.of(device));
@@ -614,5 +614,74 @@ class RepairOrderServiceTest {
         assertThrows(ResourceNotFoundException.class, () ->
             repairOrderService.searchRepairOrdersByDevice(deviceId, null, null, 0, 20, "orderNumber", "asc")
         );
+    }
+
+    @Test
+    void createRepairOrderFailsWhenDeviceDoesNotBelongToCustomer() {
+        Long customerId = 5L;
+        Long deviceId = 1L;
+        Customer owner = new Customer();
+        owner.setId(10L); // Different customer ID
+
+        Device device = new Device();
+        device.setId(deviceId);
+        device.setCustomer(owner);
+
+        CreateRepairOrderRequest request = new CreateRepairOrderRequest(
+                customerId, deviceId, "Screen cracked", RepairPriority.HIGH, null, null, null
+        );
+
+        when(deviceRepository.findById(deviceId)).thenReturn(Optional.of(device));
+
+        assertThrows(IllegalArgumentException.class, () -> repairOrderService.createRepairOrder(request));
+        verify(repairOrderRepository, never()).save(any());
+    }
+
+    @Test
+    void searchRepairOrdersByCustomerAndDeviceFailsForMismatchedPair() {
+        Long customerId = 5L;
+        Long deviceId = 1L;
+        Customer owner = new Customer();
+        owner.setId(10L);
+
+        Device device = new Device();
+        device.setId(deviceId);
+        device.setCustomer(owner);
+
+        when(deviceRepository.findById(deviceId)).thenReturn(Optional.of(device));
+
+        assertThrows(IllegalArgumentException.class, () ->
+            repairOrderService.searchRepairOrdersByCustomerAndDevice(customerId, deviceId, null, null, 0, 20, "createdAt", "desc")
+        );
+    }
+
+    @Test
+    void shouldRejectTerminalStateStatusTransitions() {
+        Long orderId = 10L;
+        RepairOrder deliveredOrder = new RepairOrder();
+        deliveredOrder.setStatus(RepairOrderStatus.DELIVERED);
+
+        RepairOrder cancelledOrder = new RepairOrder();
+        cancelledOrder.setStatus(RepairOrderStatus.CANCELLED);
+
+        UpdateRepairOrderStatusRequest request = new UpdateRepairOrderStatusRequest(RepairOrderStatus.IN_REPAIR);
+
+        when(repairOrderRepository.findById(10L)).thenReturn(Optional.of(deliveredOrder));
+        when(repairOrderRepository.findById(20L)).thenReturn(Optional.of(cancelledOrder));
+
+        assertThrows(IllegalArgumentException.class, () -> repairOrderService.updateRepairOrderStatus(10L, request));
+        assertThrows(IllegalArgumentException.class, () -> repairOrderService.updateRepairOrderStatus(20L, request));
+        verify(repairOrderRepository, never()).save(any());
+    }
+
+    @Test
+    void shouldThrowNotFoundWhenUpdatingStatusOfMissingOrder() {
+        Long missingId = 999L;
+        UpdateRepairOrderStatusRequest request = new UpdateRepairOrderStatusRequest(RepairOrderStatus.IN_REPAIR);
+
+        when(repairOrderRepository.findById(missingId)).thenReturn(Optional.empty());
+
+        assertThrows(ResourceNotFoundException.class, () -> repairOrderService.updateRepairOrderStatus(missingId, request));
+        verify(repairOrderRepository, never()).save(any());
     }
 }

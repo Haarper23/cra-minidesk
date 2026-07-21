@@ -96,8 +96,18 @@ The Device Management module (`/devices`) replaces the earlier placeholder with 
 - **Sorting**: Toggle ascending/descending sorts by column headers (`brand`, `model`, `deviceType`, `createdAt`, `updatedAt`).
 - **Pagination**: Zero-based Spring Boot `PageResponse` pagination with automatic page regression.
 - **Create Device**: Accessible modal dialog (`DeviceFormDialog`) with live customer selector (`useCustomers`), device type selector, client-side Zod validation, and backend error handling.
-- **Edit Device**: Modal dialog prefilling existing device properties with form state retention on error.
-- **Delete Device**: Modal confirmation dialog (`DeleteDeviceDialog`) displaying target device identity. If deletion is blocked due to associated repair orders, returns safe `HTTP 409 Conflict` and presents user-friendly notification without crashing or disconnecting backend.
+
+## 🛠️ Repair Orders Management Module (Sprint 5D)
+
+The Repair Orders Management module (`/repair-orders`) delivers a production desktop experience for servicing workflows:
+
+- **List, Search & Filters**: Search across service order number, customer name, device brand/model, and reported issue with 350ms input debounce. Filter by status (`RECEIVED`, `DIAGNOSING`, `WAITING_FOR_CUSTOMER_APPROVAL`, `APPROVED`, `IN_REPAIR`, `WAITING_FOR_PART`, `COMPLETED`, `READY_FOR_DELIVERY`, `DELIVERED`, `CANCELLED`) and priority (`LOW`, `NORMAL`, `HIGH`, `URGENT`).
+- **Sorting & Pagination**: Toggle ascending/descending sorts by column headers (`orderNumber`, `priority`, `status`, `createdAt`) with 1-based pagination.
+- **Create & Edit Order**: Accessible modal dialog (`RepairOrderFormDialog`) featuring bounded server-backed customer selector (`useCustomerSearch`, size=20) and customer-dependent bounded device selector (`useDeviceSearch`, size=20). Validated using Zod schemas.
+- **Order Details**: Read-only modal dialog (`RepairOrderDetailsDialog`) displaying complete customer, device, cost breakdown, diagnosis, technician notes, and status timestamps.
+- **Status Workflow Transition**: Modal dialog (`StatusChangeDialog`) enforcing valid domain state transitions (e.g. `RECEIVED` -> `DIAGNOSING`, `CANCELLED`) and preventing invalid transitions on terminal states (`DELIVERED`, `CANCELLED`). Uses typed HTTP `PATCH /api/repair-orders/{id}/status`.
+- **Delete Repair Order**: Confirmation modal dialog (`DeleteRepairOrderDialog`) restricting deletion to repair orders in `RECEIVED` or `CANCELLED` status.
+- **URL Synchronization**: Route search parameters (`?query=...&status=...&priority=...&page=0&sortBy=createdAt&sortDirection=desc`) persist search and filter states.
 - **URL Synchronization**: Route search parameters (`?query=...&customerId=...&deviceType=...&page=0&sortBy=createdAt&sortDirection=desc`) persist search and filter states.
 
 ---
@@ -117,7 +127,7 @@ pnpm format:check
 # Format code with Prettier
 pnpm format
 
-# Run Vitest unit & integration test suite (83 tests)
+# Run Vitest unit & integration test suite (113 tests)
 pnpm test:run
 ```
 
@@ -145,5 +155,5 @@ pnpm tauri build --debug
   - `Gösterge Paneli (/dashboard)`: Fully implemented and connected to real Spring Boot backend statistics.
   - `Müşteriler (/customers)`: Fully implemented in Sprint 5B with CRUD, search, pagination, sorting, and 409 conflict handling.
   - `Cihazlar (/devices)`: Fully implemented in Sprint 5C with CRUD, customer selector, device type filter, search, pagination, sorting, and 409 conflict handling.
-  - `Servis Kayıtları (/repair-orders)`: Module placeholder for Sprint 5D.
+  - `Servis Kayıtları (/repair-orders)`: Fully implemented in Sprint 5D with status machine, customer and device selectors, priority filters, repair details modal, status change modal, deletion rules, and URL parameter persistence.
 - **Common macOS Issues**: If `tauri build` fails on macOS, verify that Xcode Command Line Tools are installed (`xcode-select --install`) and that `pnpm` is active via Corepack (`corepack enable`).
