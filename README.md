@@ -33,9 +33,9 @@ The CRA MiniDesk architecture is divided into a robust, secure backend and a nat
 cra-minidesk/
 ├── .github/
 │   └── workflows/          # GitHub Actions CI/CD pipelines
-├── backend/                # Java 21 Spring Boot REST API (224 tests)
+├── backend/                # Java 21 Spring Boot REST API (231 tests)
 │   └── README.md
-├── desktop/                # React / TypeScript / Tauri desktop client (Sprint 5B)
+├── desktop/                # React / TypeScript / Tauri desktop client (Sprint 5C)
 │   └── README.md
 ├── docs/                   # Exhaustive project documentation
 │   ├── ARCHITECTURE.md     # Architectural patterns and system flow
@@ -57,7 +57,7 @@ cra-minidesk/
   - [x] Repair order workflow & timeline API
   - [x] Dashboard statistics API
   - [x] Search, filtering, pagination & sorting
-  - [x] PostgreSQL Testcontainers (224 backend automated tests passing)
+  - [x] PostgreSQL Testcontainers (231 backend automated tests passing)
 
 - **Sprint 5A — React + Tauri Desktop Foundation**:
   - [x] Tauri 2 native desktop application shell (`com.berke.cra-minidesk`)
@@ -73,8 +73,20 @@ cra-minidesk/
   - [x] Accessible modal dialogs for Create Customer and Edit Customer with inline Zod validation
   - [x] Confirmation modal dialog for Delete Customer with relationship warning
   - [x] Route search parameter persistence (`?query=...&page=0&sortBy=createdAt&sortDirection=desc`)
-  - [x] 49 automated frontend unit and integration tests passing
-  - [x] Module placeholder screens (`/devices`, `/repair-orders`) remain upcoming
+  - [x] 55 automated frontend unit and integration tests passing
+
+- **Sprint 5C — Device Desktop UI**:
+  - [x] Production-ready Device Management module (`/devices`)
+  - [x] New `GET /api/devices` global device search endpoint (query, customerId, deviceType, page, size, sortBy, sortDirection)
+  - [x] Device deletion with repair orders returns HTTP 409 Conflict (was HTTP 500)
+  - [x] Free-text search (brand, model, serial number) with 350ms debounce
+  - [x] Device type enum filter (`LAPTOP`, `DESKTOP`, `PHONE`, `TABLET`, `MONITOR`, `PRINTER`, `OTHER`)
+  - [x] Column header sorting (brand, deviceType, createdAt) & 1-based UI pagination
+  - [x] Accessible modal dialogs for Create/Edit Device with live customer selector and Zod validation
+  - [x] Confirmation modal for Delete Device with 409 conflict handling and Turkish error presentation
+  - [x] Route search parameter persistence (`?query=...&customerId=...&deviceType=...&page=0&sortBy=createdAt&sortDirection=desc`)
+  - [x] 83 automated frontend tests (28 net-new) and 231 backend tests (2 net-new) passing
+  - [x] Module placeholder screen (`/repair-orders`) remains upcoming
 
 ---
 

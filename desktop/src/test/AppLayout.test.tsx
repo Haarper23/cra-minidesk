@@ -70,10 +70,11 @@ describe('AppLayout and Navigation', () => {
     expect(screen.getByRole('heading', { name: 'Müşteri Yönetimi' })).toBeInTheDocument();
   });
 
-  it('renders devices placeholder route', () => {
+  it('renders devices route header', () => {
     renderWithRouter(['/devices']);
 
-    expect(screen.getByText('Cihaz Yönetimi Modülü')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Cihaz Yönetimi' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Cihazlar' })).toBeInTheDocument();
   });
 
   it('renders repair orders placeholder route', () => {

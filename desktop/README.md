@@ -75,15 +75,30 @@ Launches the native **CRA MiniDesk** desktop window connected to Vite live reloa
 
 ## 👥 Customer Management Module (Sprint 5B)
 
-The Customer Management module (`/customers`) replaces the earlier placeholder with a production-ready desktop experience:
+The Customer Management module (`/customers`) delivers a complete desktop experience:
 
 - **List & Search**: Real-time free-text search across customer full name, email, and phone number with 350ms input debounce and accessible clear button.
 - **Sorting**: Toggle ascending/descending sorts by column headers (`fullName`, `email`, `createdAt`, `updatedAt`).
 - **Pagination**: Zero-based Spring Boot `PageResponse` metadata translation into 1-based UI pages with page bounds protection and automatic regression to previous page upon last item deletion.
 - **Create Customer**: Accessible modal dialog (`CustomerFormDialog`) with client-side Zod validation and safe backend error presentation (e.g. duplicate email conflicts).
 - **Edit Customer**: Modal dialog prefilling existing customer values with state preservation on error.
-- **Delete Customer**: Modal confirmation dialog (`DeleteCustomerDialog`) displaying target customer name and relationship warning.
+- **Delete Customer**: Modal confirmation dialog (`DeleteCustomerDialog`) displaying target customer name and relationship warning, with safe HTTP 409 conflict handling when customer owns devices or repair orders.
 - **URL Synchronization**: Route search parameters (`?query=...&page=0&sortBy=createdAt&sortDirection=desc`) persist search and filter states.
+
+---
+
+## 💻 Device Management Module (Sprint 5C)
+
+The Device Management module (`/devices`) replaces the earlier placeholder with a production-ready desktop experience:
+
+- **List, Search & Filters**: Search devices across brand, model, serial number, and condition notes with 350ms input debounce. Filter by customer and device type (`LAPTOP`, `DESKTOP`, `PHONE`, `TABLET`, `MONITOR`, `PRINTER`, `OTHER`).
+- **Global & Customer Search API**: Supported by `GET /api/devices` and `GET /api/customers/{customerId}/devices`.
+- **Sorting**: Toggle ascending/descending sorts by column headers (`brand`, `model`, `deviceType`, `createdAt`, `updatedAt`).
+- **Pagination**: Zero-based Spring Boot `PageResponse` pagination with automatic page regression.
+- **Create Device**: Accessible modal dialog (`DeviceFormDialog`) with live customer selector (`useCustomers`), device type selector, client-side Zod validation, and backend error handling.
+- **Edit Device**: Modal dialog prefilling existing device properties with form state retention on error.
+- **Delete Device**: Modal confirmation dialog (`DeleteDeviceDialog`) displaying target device identity. If deletion is blocked due to associated repair orders, returns safe `HTTP 409 Conflict` and presents user-friendly notification without crashing or disconnecting backend.
+- **URL Synchronization**: Route search parameters (`?query=...&customerId=...&deviceType=...&page=0&sortBy=createdAt&sortDirection=desc`) persist search and filter states.
 
 ---
 
@@ -102,7 +117,7 @@ pnpm format:check
 # Format code with Prettier
 pnpm format
 
-# Run Vitest unit & integration test suite
+# Run Vitest unit & integration test suite (83 tests)
 pnpm test:run
 ```
 
@@ -128,7 +143,7 @@ pnpm tauri build --debug
 - **Authentication**: Authentication is **not implemented yet** (planned for future sprints).
 - **Module Status**:
   - `Gösterge Paneli (/dashboard)`: Fully implemented and connected to real Spring Boot backend statistics.
-  - `Müşteriler (/customers)`: Fully implemented in Sprint 5B with CRUD, search, pagination, and sorting.
-  - `Cihazlar (/devices)`: Module placeholder for Sprint 5C.
+  - `Müşteriler (/customers)`: Fully implemented in Sprint 5B with CRUD, search, pagination, sorting, and 409 conflict handling.
+  - `Cihazlar (/devices)`: Fully implemented in Sprint 5C with CRUD, customer selector, device type filter, search, pagination, sorting, and 409 conflict handling.
   - `Servis Kayıtları (/repair-orders)`: Module placeholder for Sprint 5D.
 - **Common macOS Issues**: If `tauri build` fails on macOS, verify that Xcode Command Line Tools are installed (`xcode-select --install`) and that `pnpm` is active via Corepack (`corepack enable`).

@@ -13,9 +13,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.List;
 
 @RestController
 public class DeviceController {
@@ -39,15 +38,36 @@ public class DeviceController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
+    @GetMapping("/api/devices")
+    public ResponseEntity<ApiResponse<com.berke.cra.minidesk.common.pagination.PageResponse<DeviceResponse>>> getAllDevices(
+            @RequestParam(value = "customerId", required = false) Long customerId,
+            @RequestParam(value = "query", required = false) String query,
+            @RequestParam(value = "deviceType", required = false) DeviceType deviceType,
+            @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "size", defaultValue = "20") int size,
+            @RequestParam(value = "sortBy", defaultValue = "createdAt") String sortBy,
+            @RequestParam(value = "sortDirection", defaultValue = "desc") String sortDirection) {
+
+        com.berke.cra.minidesk.common.pagination.PageResponse<DeviceResponse> pageResponse = deviceService.searchDevices(
+            customerId, query, deviceType, page, size, sortBy, sortDirection
+        );
+        ApiResponse<com.berke.cra.minidesk.common.pagination.PageResponse<DeviceResponse>> response = new ApiResponse<>(
+            true,
+            "Devices retrieved successfully",
+            pageResponse
+        );
+        return ResponseEntity.ok(response);
+    }
+
     @GetMapping("/api/customers/{customerId}/devices")
     public ResponseEntity<ApiResponse<com.berke.cra.minidesk.common.pagination.PageResponse<DeviceResponse>>> getDevicesByCustomerId(
             @PathVariable Long customerId,
-            @org.springframework.web.bind.annotation.RequestParam(value = "query", required = false) String query,
-            @org.springframework.web.bind.annotation.RequestParam(value = "deviceType", required = false) DeviceType deviceType,
-            @org.springframework.web.bind.annotation.RequestParam(value = "page", defaultValue = "0") int page,
-            @org.springframework.web.bind.annotation.RequestParam(value = "size", defaultValue = "20") int size,
-            @org.springframework.web.bind.annotation.RequestParam(value = "sortBy", defaultValue = "createdAt") String sortBy,
-            @org.springframework.web.bind.annotation.RequestParam(value = "sortDirection", defaultValue = "desc") String sortDirection) {
+            @RequestParam(value = "query", required = false) String query,
+            @RequestParam(value = "deviceType", required = false) DeviceType deviceType,
+            @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "size", defaultValue = "20") int size,
+            @RequestParam(value = "sortBy", defaultValue = "createdAt") String sortBy,
+            @RequestParam(value = "sortDirection", defaultValue = "desc") String sortDirection) {
 
         com.berke.cra.minidesk.common.pagination.PageResponse<DeviceResponse> pageResponse = deviceService.searchDevicesByCustomer(
             customerId, query, deviceType, page, size, sortBy, sortDirection
@@ -87,6 +107,43 @@ public class DeviceController {
     @DeleteMapping("/api/devices/{id}")
     public ResponseEntity<Void> deleteDevice(@PathVariable Long id) {
         deviceService.deleteDevice(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    // --- Nested customer/device ownership-validated endpoints ---
+
+    @GetMapping("/api/customers/{customerId}/devices/{deviceId}")
+    public ResponseEntity<ApiResponse<DeviceResponse>> getDeviceForCustomer(
+            @PathVariable Long customerId,
+            @PathVariable Long deviceId) {
+        DeviceResponse device = deviceService.getDeviceForCustomer(customerId, deviceId);
+        ApiResponse<DeviceResponse> response = new ApiResponse<>(
+                true,
+                "Device retrieved successfully",
+                device
+        );
+        return ResponseEntity.ok(response);
+    }
+
+    @PutMapping("/api/customers/{customerId}/devices/{deviceId}")
+    public ResponseEntity<ApiResponse<DeviceResponse>> updateDeviceForCustomer(
+            @PathVariable Long customerId,
+            @PathVariable Long deviceId,
+            @Valid @RequestBody UpdateDeviceRequest request) {
+        DeviceResponse device = deviceService.updateDeviceForCustomer(customerId, deviceId, request);
+        ApiResponse<DeviceResponse> response = new ApiResponse<>(
+                true,
+                "Device updated successfully",
+                device
+        );
+        return ResponseEntity.ok(response);
+    }
+
+    @DeleteMapping("/api/customers/{customerId}/devices/{deviceId}")
+    public ResponseEntity<Void> deleteDeviceForCustomer(
+            @PathVariable Long customerId,
+            @PathVariable Long deviceId) {
+        deviceService.deleteDeviceForCustomer(customerId, deviceId);
         return ResponseEntity.noContent().build();
     }
 }
