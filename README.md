@@ -75,18 +75,22 @@ cra-minidesk/
   - [x] Route search parameter persistence (`?query=...&page=0&sortBy=createdAt&sortDirection=desc`)
   - [x] 55 automated frontend unit and integration tests passing
 
-- **Sprint 5C — Device Desktop UI**:
-  - [x] Production-ready Device Management module (`/devices`)
-  - [x] New `GET /api/devices` global device search endpoint (query, customerId, deviceType, page, size, sortBy, sortDirection)
-  - [x] Device deletion with repair orders returns HTTP 409 Conflict (was HTTP 500)
-  - [x] Free-text search (brand, model, serial number) with 350ms debounce
-  - [x] Device type enum filter (`LAPTOP`, `DESKTOP`, `PHONE`, `TABLET`, `MONITOR`, `PRINTER`, `OTHER`)
-  - [x] Column header sorting (brand, deviceType, createdAt) & 1-based UI pagination
-  - [x] Accessible modal dialogs for Create/Edit Device with live customer selector and Zod validation
-  - [x] Confirmation modal for Delete Device with 409 conflict handling and Turkish error presentation
-  - [x] Route search parameter persistence (`?query=...&customerId=...&deviceType=...&page=0&sortBy=createdAt&sortDirection=desc`)
-  - [x] 83 automated frontend tests (28 net-new) and 231 backend tests (2 net-new) passing
-  - [x] Module placeholder screen (`/repair-orders`) remains upcoming
+- **Sprint 5D — Repair Orders Desktop UI (Release Hardened)**:
+  - [x] Production-ready Repair Orders module (`/repair-orders`)
+  - [x] Typed HTTP `PATCH` client method (`apiClient.patch`) for partial status updates
+  - [x] Status transition machine (`RECEIVED`, `DIAGNOSING`, `WAITING_FOR_CUSTOMER_APPROVAL`, `APPROVED`, `IN_REPAIR`, `WAITING_FOR_PART`, `COMPLETED`, `READY_FOR_DELIVERY`, `DELIVERED`, `CANCELLED`) with strict domain rules
+  - [x] Free-text search (order number, customer name, device brand/model, reported issue) with 350ms input debounce
+  - [x] Bounded server-backed customer (`useCustomerSearch`) and device (`useDeviceSearch`) dropdown filters in toolbar UI
+  - [x] Status & priority dropdown filters (`LOW`, `NORMAL`, `HIGH`, `URGENT`)
+  - [x] Service-level customer-device ownership validation on creation and nested endpoints (`GET /api/customers/{customerId}/devices/{deviceId}/repair-orders`)
+  - [x] Column header sorting (`orderNumber`, `priority`, `status`, `createdAt`) & 1-based UI pagination
+  - [x] Accessible modal dialog for Create/Edit Repair Order with bounded customer selector (`useCustomerSearch`) and customer-dependent device selector (`useDeviceSearch`)
+  - [x] Read-only Repair Order Details modal (`RepairOrderDetailsDialog`) with customer, device, timestamps, cost breakdowns, and technical notes
+  - [x] Status transition modal (`StatusChangeDialog`) enforcing valid next statuses and terminal state protections
+  - [x] Confirmation modal for Delete Repair Order (`DeleteRepairOrderDialog`) restricting deletion to `RECEIVED` or `CANCELLED` statuses
+  - [x] Route search parameter persistence (`?query=...&status=...&priority=...&customerId=...&deviceId=...&page=0&sortBy=createdAt&sortDirection=desc`)
+  - [x] 113 automated frontend tests passing across 12 test files and 249 backend tests passing
+
 
 ---
 

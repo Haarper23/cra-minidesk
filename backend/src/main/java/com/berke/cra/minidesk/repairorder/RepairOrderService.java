@@ -45,6 +45,10 @@ public class RepairOrderService {
         Device device = deviceRepository.findById(request.deviceId())
                 .orElseThrow(() -> new ResourceNotFoundException("Device with ID " + request.deviceId() + " not found"));
 
+        if (request.customerId() != null && !device.getCustomer().getId().equals(request.customerId())) {
+            throw new IllegalArgumentException("Device with ID " + request.deviceId() + " does not belong to customer with ID " + request.customerId());
+        }
+
         if (request.estimatedCost() != null && request.estimatedCost().compareTo(java.math.BigDecimal.ZERO) < 0) {
             throw new IllegalArgumentException("Estimated cost cannot be negative");
         }
@@ -132,6 +136,27 @@ public class RepairOrderService {
         org.springframework.data.domain.Page<RepairOrder> orderPage = repairOrderRepository.findAll(spec, pageable);
 
         return com.berke.cra.minidesk.common.pagination.PageResponse.fromPage(orderPage, repairOrderMapper::toResponse);
+    }
+
+    @Transactional(readOnly = true)
+    public com.berke.cra.minidesk.common.pagination.PageResponse<RepairOrderResponse> searchRepairOrdersByCustomerAndDevice(
+            Long customerId,
+            Long deviceId,
+            RepairOrderStatus status,
+            RepairPriority priority,
+            int page,
+            int size,
+            String sortBy,
+            String sortDirection) {
+
+        Device device = deviceRepository.findById(deviceId)
+                .orElseThrow(() -> new ResourceNotFoundException("Device with ID " + deviceId + " not found"));
+
+        if (!device.getCustomer().getId().equals(customerId)) {
+            throw new IllegalArgumentException("Device with ID " + deviceId + " does not belong to customer with ID " + customerId);
+        }
+
+        return searchRepairOrdersByDevice(deviceId, status, priority, page, size, sortBy, sortDirection);
     }
 
     @Transactional

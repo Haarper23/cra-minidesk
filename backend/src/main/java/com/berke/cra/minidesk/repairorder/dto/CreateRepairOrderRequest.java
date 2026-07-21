@@ -11,6 +11,9 @@ import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
 
 public record CreateRepairOrderRequest(
+    @Positive(message = "Customer ID must be positive")
+    Long customerId,
+
     @NotNull(message = "Device ID is required")
     @Positive(message = "Device ID must be positive")
     Long deviceId,

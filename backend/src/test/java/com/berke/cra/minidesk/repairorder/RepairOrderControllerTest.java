@@ -52,7 +52,7 @@ class RepairOrderControllerTest extends PostgresIntegrationTest {
     @Test
     void shouldCreateRepairOrder() throws Exception {
         CreateRepairOrderRequest request = new CreateRepairOrderRequest(
-                1L, "Broken keyboard", RepairPriority.NORMAL, "Diagnosis notes", null, new BigDecimal("100.00")
+                null, 1L, "Broken keyboard", RepairPriority.NORMAL, "Diagnosis notes", null, new BigDecimal("100.00")
         );
         RepairOrderResponse response = new RepairOrderResponse(
                 10L, "CRA-20260716-12345678", 1L, "Dell", "Latitude", 2L, "Jane Doe",
@@ -75,7 +75,7 @@ class RepairOrderControllerTest extends PostgresIntegrationTest {
     @Test
     void shouldRejectCreateRepairOrderWithMissingDeviceId() throws Exception {
         CreateRepairOrderRequest request = new CreateRepairOrderRequest(
-                null, "Broken keyboard", RepairPriority.NORMAL, null, null, null
+                null, null, "Broken keyboard", RepairPriority.NORMAL, null, null, null
         );
 
         mockMvc.perform(post("/api/repair-orders")
@@ -92,7 +92,7 @@ class RepairOrderControllerTest extends PostgresIntegrationTest {
     @Test
     void shouldRejectCreateRepairOrderWithMissingReportedIssue() throws Exception {
         CreateRepairOrderRequest request = new CreateRepairOrderRequest(
-                1L, "", RepairPriority.NORMAL, null, null, null
+                null, 1L, "", RepairPriority.NORMAL, null, null, null
         );
 
         mockMvc.perform(post("/api/repair-orders")
@@ -439,5 +439,28 @@ class RepairOrderControllerTest extends PostgresIntegrationTest {
                 .andExpect(jsonPath("$.data.last", is(true)))
                 .andExpect(jsonPath("$.data.hasNext", is(false)))
                 .andExpect(jsonPath("$.data.hasPrevious", is(false)));
+    }
+
+    @Test
+    void shouldGetRepairOrdersByCustomerAndDeviceId() throws Exception {
+        Long customerId = 2L;
+        Long deviceId = 1L;
+        RepairOrderResponse response = new RepairOrderResponse(
+                10L, "CRA-20260716-12345678", deviceId, "Dell", "Latitude", customerId, "Jane Doe",
+                "Broken keyboard", null, null, RepairOrderStatus.RECEIVED, RepairPriority.NORMAL,
+                null, null, Instant.now(), null, null, Instant.now(), Instant.now()
+        );
+        com.berke.cra.minidesk.common.pagination.PageResponse<RepairOrderResponse> pageResponse = new com.berke.cra.minidesk.common.pagination.PageResponse<>(
+            List.of(response), 0, 20, 1L, 1, true, true, false, false
+        );
+
+        when(repairOrderService.searchRepairOrdersByCustomerAndDevice(customerId, deviceId, null, null, 0, 20, "createdAt", "desc"))
+                .thenReturn(pageResponse);
+
+        mockMvc.perform(get("/api/customers/{customerId}/devices/{deviceId}/repair-orders", customerId, deviceId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success", is(true)))
+                .andExpect(jsonPath("$.data.content", hasSize(1)))
+                .andExpect(jsonPath("$.data.content[0].id", is(10)));
     }
 }
