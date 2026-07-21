@@ -1,5 +1,6 @@
 package com.berke.cra.minidesk.device;
 
+import com.berke.cra.minidesk.common.error.ResourceConflictException;
 import com.berke.cra.minidesk.common.error.ResourceNotFoundException;
 import com.berke.cra.minidesk.customer.Customer;
 import com.berke.cra.minidesk.customer.CustomerRepository;
@@ -12,6 +13,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.springframework.dao.DataIntegrityViolationException;
 
 import java.time.Instant;
 import java.util.List;
@@ -22,7 +24,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -119,7 +120,7 @@ class DeviceServiceTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    void shouldReturnDevicesByCustomerId() {
+    void shouldReturnDevicesGloballyOrByCustomerId() {
         Long customerId = 1L;
         Device device = new Device();
         DeviceResponse response = new DeviceResponse(10L, customerId, "John Doe", "Apple", "MacBook", "XYZ123", DeviceType.LAPTOP, "Silver", "Charger", "Good", Instant.now(), Instant.now());
@@ -129,8 +130,8 @@ class DeviceServiceTest {
         when(deviceRepository.findAll(any(org.springframework.data.jpa.domain.Specification.class), any(org.springframework.data.domain.Pageable.class))).thenReturn(devicePage);
         when(deviceMapper.toResponse(device)).thenReturn(response);
 
-        com.berke.cra.minidesk.common.pagination.PageResponse<DeviceResponse> results = deviceService.searchDevicesByCustomer(
-            customerId, null, null, 0, 20, "createdAt", "desc"
+        com.berke.cra.minidesk.common.pagination.PageResponse<DeviceResponse> results = deviceService.searchDevices(
+            null, null, null, 0, 20, "createdAt", "desc"
         );
 
         assertNotNull(results);
@@ -191,6 +192,7 @@ class DeviceServiceTest {
 
         assertDoesNotThrow(() -> deviceService.deleteDevice(deviceId));
         verify(deviceRepository, times(1)).deleteById(deviceId);
+        verify(deviceRepository, times(1)).flush();
     }
 
     @Test
@@ -199,47 +201,43 @@ class DeviceServiceTest {
         when(deviceRepository.existsById(deviceId)).thenReturn(true);
         when(repairOrderRepository.existsByDeviceId(deviceId)).thenReturn(true);
 
-        assertThrows(IllegalArgumentException.class, () -> deviceService.deleteDevice(deviceId));
+        ResourceConflictException ex = assertThrows(ResourceConflictException.class, () -> deviceService.deleteDevice(deviceId));
+        assertEquals("Device cannot be deleted because related repair orders exist", ex.getMessage());
         verify(deviceRepository, never()).deleteById(any());
     }
 
     @Test
     void shouldRejectDeviceSearchWithInvalidSortField() {
-        when(customerRepository.existsById(1L)).thenReturn(true);
         assertThrows(IllegalArgumentException.class, () ->
-            deviceService.searchDevicesByCustomer(1L, null, null, 0, 20, "invalidField", "asc")
+            deviceService.searchDevices(null, null, null, 0, 20, "invalidField", "asc")
         );
     }
 
     @Test
     void shouldRejectDeviceSearchWithInvalidSortDirection() {
-        when(customerRepository.existsById(1L)).thenReturn(true);
         assertThrows(IllegalArgumentException.class, () ->
-            deviceService.searchDevicesByCustomer(1L, null, null, 0, 20, "brand", "invalidDir")
+            deviceService.searchDevices(null, null, null, 0, 20, "brand", "invalidDir")
         );
     }
 
     @Test
     void shouldRejectDeviceSearchWithNegativePage() {
-        when(customerRepository.existsById(1L)).thenReturn(true);
         assertThrows(IllegalArgumentException.class, () ->
-            deviceService.searchDevicesByCustomer(1L, null, null, -1, 20, "brand", "asc")
+            deviceService.searchDevices(null, null, null, -1, 20, "brand", "asc")
         );
     }
 
     @Test
     void shouldRejectDeviceSearchWithZeroSize() {
-        when(customerRepository.existsById(1L)).thenReturn(true);
         assertThrows(IllegalArgumentException.class, () ->
-            deviceService.searchDevicesByCustomer(1L, null, null, 0, 0, "brand", "asc")
+            deviceService.searchDevices(null, null, null, 0, 0, "brand", "asc")
         );
     }
 
     @Test
     void shouldRejectDeviceSearchWithLargeSize() {
-        when(customerRepository.existsById(1L)).thenReturn(true);
         assertThrows(IllegalArgumentException.class, () ->
-            deviceService.searchDevicesByCustomer(1L, null, null, 0, 101, "brand", "asc")
+            deviceService.searchDevices(null, null, null, 0, 101, "brand", "asc")
         );
     }
 
@@ -249,7 +247,135 @@ class DeviceServiceTest {
         when(customerRepository.existsById(customerId)).thenReturn(false);
 
         assertThrows(ResourceNotFoundException.class, () ->
-            deviceService.searchDevicesByCustomer(customerId, null, null, 0, 20, "brand", "asc")
+            deviceService.searchDevices(customerId, null, null, 0, 20, "brand", "asc")
         );
+    }
+
+    // --- Deletion edge-case tests ---
+
+    @Test
+    void shouldThrowNotFoundWhenDeletingNonExistentDevice() {
+        Long deviceId = 999L;
+        when(deviceRepository.existsById(deviceId)).thenReturn(false);
+
+        assertThrows(ResourceNotFoundException.class, () -> deviceService.deleteDevice(deviceId));
+        verify(deviceRepository, never()).deleteById(any());
+    }
+
+    @Test
+    void shouldNotCallDeleteByIdAfterExplicitConflictCheck() {
+        Long deviceId = 10L;
+        when(deviceRepository.existsById(deviceId)).thenReturn(true);
+        when(repairOrderRepository.existsByDeviceId(deviceId)).thenReturn(true);
+
+        assertThrows(ResourceConflictException.class, () -> deviceService.deleteDevice(deviceId));
+        verify(deviceRepository, never()).deleteById(deviceId);
+        verify(deviceRepository, never()).flush();
+    }
+
+    @Test
+    void shouldReturn409OnDataIntegrityViolationRaceCondition() {
+        Long deviceId = 10L;
+        when(deviceRepository.existsById(deviceId)).thenReturn(true);
+        when(repairOrderRepository.existsByDeviceId(deviceId)).thenReturn(false);
+        // Simulate race: repair order created between check and delete
+        org.mockito.Mockito.doThrow(new DataIntegrityViolationException("FK constraint"))
+                .when(deviceRepository).deleteById(deviceId);
+
+        ResourceConflictException ex = assertThrows(ResourceConflictException.class, () -> deviceService.deleteDevice(deviceId));
+        assertEquals("Device cannot be deleted because related repair orders exist", ex.getMessage());
+    }
+
+    // --- Nested customer/device ownership tests ---
+
+    @Test
+    void shouldReturnDeviceForCorrectCustomerDevicePair() {
+        Long customerId = 1L;
+        Long deviceId = 10L;
+        Customer customer = new Customer("John Doe", "john@example.com", "123456", "Notes");
+        customer.setId(customerId);
+        Device device = new Device(customer, "Apple", "MacBook", "XYZ123", DeviceType.LAPTOP, "Silver", "Charger", "Good");
+        device.setId(deviceId);
+        DeviceResponse response = new DeviceResponse(deviceId, customerId, "John Doe", "Apple", "MacBook", "XYZ123", DeviceType.LAPTOP, "Silver", "Charger", "Good", Instant.now(), Instant.now());
+
+        when(customerRepository.existsById(customerId)).thenReturn(true);
+        when(deviceRepository.findById(deviceId)).thenReturn(Optional.of(device));
+        when(deviceMapper.toResponse(device)).thenReturn(response);
+
+        DeviceResponse result = deviceService.getDeviceForCustomer(customerId, deviceId);
+        assertNotNull(result);
+        assertEquals(deviceId, result.id());
+        assertEquals(customerId, result.customerId());
+    }
+
+    @Test
+    void shouldThrow404ForWrongCustomerWithRealDeviceId() {
+        Long correctCustomerId = 1L;
+        Long wrongCustomerId = 2L;
+        Long deviceId = 10L;
+        Customer customer = new Customer("John Doe", "john@example.com", "123456", "Notes");
+        customer.setId(correctCustomerId);
+        Device device = new Device(customer, "Apple", "MacBook", "XYZ123", DeviceType.LAPTOP, "Silver", "Charger", "Good");
+        device.setId(deviceId);
+
+        when(customerRepository.existsById(wrongCustomerId)).thenReturn(true);
+        when(deviceRepository.findById(deviceId)).thenReturn(Optional.of(device));
+
+        assertThrows(ResourceNotFoundException.class, () -> deviceService.getDeviceForCustomer(wrongCustomerId, deviceId));
+    }
+
+    @Test
+    void shouldThrow404ForNonExistentCustomerInOwnershipCheck() {
+        Long customerId = 999L;
+        Long deviceId = 10L;
+        when(customerRepository.existsById(customerId)).thenReturn(false);
+
+        assertThrows(ResourceNotFoundException.class, () -> deviceService.getDeviceForCustomer(customerId, deviceId));
+        verify(deviceRepository, never()).findById(any());
+    }
+
+    @Test
+    void shouldThrow404ForNonExistentDeviceInOwnershipCheck() {
+        Long customerId = 1L;
+        Long deviceId = 999L;
+        when(customerRepository.existsById(customerId)).thenReturn(true);
+        when(deviceRepository.findById(deviceId)).thenReturn(Optional.empty());
+
+        assertThrows(ResourceNotFoundException.class, () -> deviceService.getDeviceForCustomer(customerId, deviceId));
+    }
+
+    @Test
+    void shouldThrow404ForUpdateWithMismatchedOwnership() {
+        Long correctCustomerId = 1L;
+        Long wrongCustomerId = 2L;
+        Long deviceId = 10L;
+        Customer customer = new Customer("John Doe", "john@example.com", "123456", "Notes");
+        customer.setId(correctCustomerId);
+        Device device = new Device(customer, "Apple", "MacBook", "XYZ123", DeviceType.LAPTOP, "Silver", "Charger", "Good");
+        device.setId(deviceId);
+        UpdateDeviceRequest request = new UpdateDeviceRequest("Dell", "XPS", "NEW123", DeviceType.LAPTOP, "Black", "None", "Fair");
+
+        when(customerRepository.existsById(wrongCustomerId)).thenReturn(true);
+        when(deviceRepository.findById(deviceId)).thenReturn(Optional.of(device));
+
+        assertThrows(ResourceNotFoundException.class, () -> deviceService.updateDeviceForCustomer(wrongCustomerId, deviceId, request));
+        verify(deviceRepository, never()).save(any());
+    }
+
+    @Test
+    void shouldThrow404ForDeleteWithMismatchedOwnership() {
+        Long correctCustomerId = 1L;
+        Long wrongCustomerId = 2L;
+        Long deviceId = 10L;
+        Customer customer = new Customer("John Doe", "john@example.com", "123456", "Notes");
+        customer.setId(correctCustomerId);
+        Device device = new Device(customer, "Apple", "MacBook", "XYZ123", DeviceType.LAPTOP, "Silver", "Charger", "Good");
+        device.setId(deviceId);
+
+        when(customerRepository.existsById(wrongCustomerId)).thenReturn(true);
+        when(deviceRepository.findById(deviceId)).thenReturn(Optional.of(device));
+
+        assertThrows(ResourceNotFoundException.class, () -> deviceService.deleteDeviceForCustomer(wrongCustomerId, deviceId));
+        verify(deviceRepository, never()).deleteById(any());
     }
 }

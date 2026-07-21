@@ -7,6 +7,8 @@ export interface ApiResponse<T = unknown> {
   data: T;
 }
 
+export type SortDirection = 'asc' | 'desc';
+
 export interface PageResponse<T> {
   content: T[];
   page: number;

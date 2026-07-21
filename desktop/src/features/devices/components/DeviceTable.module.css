@@ -1,0 +1,165 @@
+.tableContainer {
+  width: 100%;
+  overflow-x: auto;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: var(--font-size-sm);
+}
+
+.th {
+  background-color: var(--color-bg-alt);
+  color: var(--color-text-secondary);
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+  white-space: nowrap;
+}
+
+.thSortable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.thSortable:hover {
+  color: var(--color-text-primary);
+  background-color: var(--color-border-subtle);
+}
+
+.sortButton {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  background: none;
+  border: none;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  padding: 0;
+}
+
+.tr {
+  border-bottom: 1px solid var(--color-border-subtle);
+  transition: background-color var(--transition-fast);
+}
+
+.tr:last-child {
+  border-bottom: none;
+}
+
+.tr:hover {
+  background-color: rgba(0, 0, 0, 0.015);
+}
+
+.td {
+  padding: var(--space-3) var(--space-4);
+  color: var(--color-text-primary);
+  vertical-align: middle;
+}
+
+.customerInfo {
+  display: flex;
+  flex-direction: column;
+}
+
+.customerName {
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+}
+
+.deviceTitle {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.deviceModel {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
+.serialNumber {
+  font-family: monospace;
+  font-size: var(--font-size-xs);
+  background-color: var(--color-bg-alt);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border-subtle);
+  color: var(--color-text-secondary);
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  background-color: var(--color-bg-alt);
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border);
+}
+
+.laptopBadge {
+  background-color: rgba(37, 99, 235, 0.08);
+  color: var(--color-primary);
+  border-color: rgba(37, 99, 235, 0.2);
+}
+
+.desktopBadge {
+  background-color: rgba(16, 185, 129, 0.08);
+  color: #059669;
+  border-color: rgba(16, 185, 129, 0.2);
+}
+
+.phoneBadge {
+  background-color: rgba(139, 92, 246, 0.08);
+  color: #7c3aed;
+  border-color: rgba(139, 92, 246, 0.2);
+}
+
+.actionsCell {
+  white-space: nowrap;
+  text-align: right;
+}
+
+.actionButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  background: none;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  margin-left: var(--space-1);
+}
+
+.actionButton:hover {
+  background-color: var(--color-bg-alt);
+  color: var(--color-text-primary);
+  border-color: var(--color-border);
+}
+
+.deleteButton:hover {
+  background-color: rgba(239, 68, 68, 0.08);
+  color: var(--color-danger);
+  border-color: rgba(239, 68, 68, 0.2);
+}
+
+.mutedText {
+  color: var(--color-text-tertiary);
+  font-style: italic;
+}
