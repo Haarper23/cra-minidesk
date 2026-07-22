@@ -10,7 +10,7 @@ export function useUpdateRepairOrderStatus() {
     mutationFn: ({ id, input }: { id: number; input: UpdateRepairOrderStatusInput }) =>
       updateRepairOrderStatus(id, input),
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: repairOrderKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: repairOrderKeys.all });
       queryClient.invalidateQueries({ queryKey: repairOrderKeys.detail(data.id) });
     },
   });

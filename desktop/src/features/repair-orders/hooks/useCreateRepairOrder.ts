@@ -9,7 +9,7 @@ export function useCreateRepairOrder() {
   return useMutation({
     mutationFn: (input: CreateRepairOrderInput) => createRepairOrder(input),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: repairOrderKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: repairOrderKeys.all });
     },
   });
 }

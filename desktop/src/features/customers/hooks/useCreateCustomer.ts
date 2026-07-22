@@ -10,7 +10,7 @@ export function useCreateCustomer() {
   return useMutation<Customer, ApiError, CustomerFormInput>({
     mutationFn: (input) => createCustomer(input),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: customerKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: customerKeys.all });
     },
   });
 }
