@@ -8,8 +8,9 @@ export function useDeleteDevice() {
 
   return useMutation<void, ApiError, number>({
     mutationFn: (id) => deleteDevice(id),
-    onSuccess: () => {
+    onSuccess: (_, id) => {
       queryClient.invalidateQueries({ queryKey: deviceKeys.all });
+      queryClient.removeQueries({ queryKey: deviceKeys.detail(id) });
     },
   });
 }

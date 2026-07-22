@@ -9,7 +9,7 @@ export function useDeleteCustomer() {
   return useMutation<void, ApiError, number>({
     mutationFn: (id) => deleteCustomer(id),
     onSuccess: (_, id) => {
-      queryClient.invalidateQueries({ queryKey: customerKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: customerKeys.all });
       queryClient.removeQueries({ queryKey: customerKeys.detail(id) });
     },
   });

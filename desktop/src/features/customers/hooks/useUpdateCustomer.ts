@@ -15,7 +15,7 @@ export function useUpdateCustomer() {
   return useMutation<Customer, ApiError, UpdateCustomerArgs>({
     mutationFn: ({ id, input }) => updateCustomer(id, input),
     onSuccess: (updatedCustomer) => {
-      queryClient.invalidateQueries({ queryKey: customerKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: customerKeys.all });
       queryClient.invalidateQueries({ queryKey: customerKeys.detail(updatedCustomer.id) });
     },
   });

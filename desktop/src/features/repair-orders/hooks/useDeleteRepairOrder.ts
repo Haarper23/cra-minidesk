@@ -7,8 +7,9 @@ export function useDeleteRepairOrder() {
 
   return useMutation({
     mutationFn: (id: number) => deleteRepairOrder(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: repairOrderKeys.lists() });
+    onSuccess: (_, id) => {
+      queryClient.invalidateQueries({ queryKey: repairOrderKeys.all });
+      queryClient.removeQueries({ queryKey: repairOrderKeys.detail(id) });
     },
   });
 }
