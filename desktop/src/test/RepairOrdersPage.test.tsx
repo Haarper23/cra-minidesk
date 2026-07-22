@@ -309,4 +309,15 @@ describe('RepairOrdersPage Integration', () => {
       expect(screen.getByText('Servis kaydı başarıyla silindi.')).toBeInTheDocument();
     });
   });
+
+  it('automatically opens details dialog when selectedId is passed in search params', async () => {
+    vi.mocked(repairOrderApi.fetchRepairOrders).mockResolvedValue(mockRepairOrderPageResponse);
+
+    renderRepairOrdersPage(['/repair-orders?selectedId=1']);
+
+    await waitFor(() => {
+      expect(screen.getByText(/Servis Kaydı Detayları/i)).toBeInTheDocument();
+      expect(screen.getAllByText('CRA-20260721-0001').length).toBeGreaterThan(0);
+    });
+  });
 });

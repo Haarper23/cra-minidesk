@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useSearchParams, useLocation } from 'react-router-dom';
 import { CheckCircle2, AlertCircle, X } from 'lucide-react';
 import { useRepairOrders } from '../hooks/useRepairOrders';
 import { useCreateRepairOrder } from '../hooks/useCreateRepairOrder';
@@ -25,6 +26,9 @@ import { ApiError } from '../../../lib/api/apiError';
 import styles from './RepairOrdersPage.module.css';
 
 export const RepairOrdersPage: React.FC = () => {
+  const [searchParams] = useSearchParams();
+  const location = useLocation();
+
   const {
     data,
     isLoading,
@@ -54,6 +58,19 @@ export const RepairOrdersPage: React.FC = () => {
 
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [orderToView, setOrderToView] = useState<RepairOrder | null>(null);
+
+  useEffect(() => {
+    const locState = location.state as { selectedId?: number } | null;
+    const selectedIdParam = searchParams.get('selectedId') || locState?.selectedId;
+    if (selectedIdParam && data?.content) {
+      const selectedId = Number(selectedIdParam);
+      const matchedOrder = data.content.find((item) => item.id === selectedId);
+      if (matchedOrder) {
+        setOrderToView(matchedOrder);
+        setIsDetailsOpen(true);
+      }
+    }
+  }, [searchParams, location.state, data]);
 
   const [isStatusOpen, setIsStatusOpen] = useState(false);
   const [orderToStatusChange, setOrderToStatusChange] = useState<RepairOrder | null>(null);
@@ -109,11 +126,9 @@ export const RepairOrdersPage: React.FC = () => {
       },
       onError: (err) => {
         const msg =
-          err instanceof ApiError
-            ? err.userMessage
-            : err instanceof Error
-              ? err.message
-              : 'Servis kaydı oluşturulurken hata oluştu.';
+          (err as ApiError)?.userMessage ||
+          (err as Error)?.message ||
+          'Servis kaydı oluşturulurken hata oluştu.';
         setDialogServerError(msg);
       },
     });
@@ -122,7 +137,7 @@ export const RepairOrdersPage: React.FC = () => {
   const handleSubmitUpdate = (id: number, input: UpdateRepairOrderInput) => {
     setDialogServerError(null);
     updateMutation.mutate(
-      { id, input },
+      { id, data: input },
       {
         onSuccess: () => {
           setIsFormOpen(false);
@@ -130,11 +145,9 @@ export const RepairOrdersPage: React.FC = () => {
         },
         onError: (err) => {
           const msg =
-            err instanceof ApiError
-              ? err.userMessage
-              : err instanceof Error
-                ? err.message
-                : 'Servis kaydı güncellenirken hata oluştu.';
+            (err as ApiError)?.userMessage ||
+            (err as Error)?.message ||
+            'Servis kaydı güncellenirken hata oluştu.';
           setDialogServerError(msg);
         },
       }
@@ -144,7 +157,7 @@ export const RepairOrdersPage: React.FC = () => {
   const handleSubmitStatus = (id: number, status: RepairOrderStatus) => {
     setDialogServerError(null);
     statusMutation.mutate(
-      { id, input: { status } },
+      { id, data: { status } },
       {
         onSuccess: () => {
           setIsStatusOpen(false);
@@ -152,11 +165,9 @@ export const RepairOrdersPage: React.FC = () => {
         },
         onError: (err) => {
           const msg =
-            err instanceof ApiError
-              ? err.userMessage
-              : err instanceof Error
-                ? err.message
-                : 'Servis kaydı durumu güncellenirken hata oluştu.';
+            (err as ApiError)?.userMessage ||
+            (err as Error)?.message ||
+            'Servis kaydı durumu güncellenirken hata oluştu.';
           setDialogServerError(msg);
         },
       }
@@ -172,11 +183,9 @@ export const RepairOrdersPage: React.FC = () => {
       },
       onError: (err) => {
         const msg =
-          err instanceof ApiError
-            ? err.userMessage
-            : err instanceof Error
-              ? err.message
-              : 'Servis kaydı silinirken hata oluştu.';
+          (err as ApiError)?.userMessage ||
+          (err as Error)?.message ||
+          'Servis kaydı silinirken hata oluştu.';
         setDialogServerError(msg);
       },
     });

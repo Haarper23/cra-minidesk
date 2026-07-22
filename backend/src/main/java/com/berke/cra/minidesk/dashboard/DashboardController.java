@@ -2,6 +2,7 @@ package com.berke.cra.minidesk.dashboard;
 
 import com.berke.cra.minidesk.common.ApiResponse;
 import com.berke.cra.minidesk.dashboard.dto.DashboardResponse;
+import com.berke.cra.minidesk.dashboard.dto.DashboardSummaryResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -15,6 +16,17 @@ public class DashboardController {
 
     public DashboardController(DashboardService dashboardService) {
         this.dashboardService = dashboardService;
+    }
+
+    @GetMapping("/summary")
+    public ResponseEntity<ApiResponse<DashboardSummaryResponse>> getDashboardSummary() {
+        DashboardSummaryResponse summary = dashboardService.getDashboardSummary();
+        ApiResponse<DashboardSummaryResponse> response = new ApiResponse<>(
+            true,
+            "Dashboard summary retrieved successfully",
+            summary
+        );
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping

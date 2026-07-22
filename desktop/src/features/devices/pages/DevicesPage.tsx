@@ -188,17 +188,8 @@ export const DevicesPage: React.FC = () => {
 
   const handleFormSubmit = (input: DeviceFormInput) => {
     if (deviceToEdit) {
-      const updateData = {
-        brand: input.brand,
-        model: input.model,
-        serialNumber: input.serialNumber,
-        deviceType: input.deviceType,
-        color: input.color,
-        accessories: input.accessories,
-        conditionNotes: input.conditionNotes,
-      };
       updateDeviceMutation.mutate(
-        { id: deviceToEdit.id, data: updateData },
+        { id: deviceToEdit.id, data: input },
         {
           onSuccess: () => {
             setIsFormDialogOpen(false);

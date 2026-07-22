@@ -142,7 +142,7 @@ export const CustomersPage: React.FC = () => {
   const handleUpdateSubmit = async (formData: CustomerFormInput) => {
     if (!customerToEdit) return;
     try {
-      await updateMutation.mutateAsync({ id: customerToEdit.id, input: formData });
+      await updateMutation.mutateAsync({ id: customerToEdit.id, data: formData });
       setCustomerToEdit(null);
       setNotification('Müşteri başarıyla güncellendi.');
     } catch {

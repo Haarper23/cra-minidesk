@@ -1,9 +1,10 @@
 import React from 'react';
-import { RepairStatusCount, RepairOrderStatus } from '../types/dashboardTypes';
+import { RepairStatusCountData } from '../types/dashboardTypes';
+import { RepairOrderStatus } from '../../repair-orders/types/repairOrderTypes';
 import styles from './StatusBreakdown.module.css';
 
 interface StatusBreakdownProps {
-  statusCounts: RepairStatusCount[];
+  statusCounts: RepairStatusCountData[];
 }
 
 const STATUS_LABELS: Record<RepairOrderStatus, { label: string; badgeClass: string }> = {

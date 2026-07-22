@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { deleteCustomer } from '../api/customerApi';
 import { customerKeys } from '../api/customerKeys';
+import { dashboardKeys } from '../../dashboard/api/dashboardKeys';
 import { ApiError } from '../../../lib/api/apiError';
 
 export function useDeleteCustomer() {
@@ -11,6 +12,7 @@ export function useDeleteCustomer() {
     onSuccess: (_, id) => {
       queryClient.invalidateQueries({ queryKey: customerKeys.all });
       queryClient.removeQueries({ queryKey: customerKeys.detail(id) });
+      queryClient.invalidateQueries({ queryKey: dashboardKeys.all });
     },
   });
 }
