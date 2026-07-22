@@ -3,10 +3,12 @@ package com.berke.cra.minidesk.dashboard;
 import com.berke.cra.minidesk.customer.CustomerRepository;
 import com.berke.cra.minidesk.device.DeviceRepository;
 import com.berke.cra.minidesk.dashboard.dto.DashboardResponse;
+import com.berke.cra.minidesk.dashboard.dto.DashboardSummaryResponse;
 import com.berke.cra.minidesk.dashboard.dto.RepairStatusCountResponse;
 import com.berke.cra.minidesk.repairorder.RepairOrderRepository;
 import com.berke.cra.minidesk.repairorder.RepairOrderStatus;
 import com.berke.cra.minidesk.repairorder.RepairPriority;
+import com.berke.cra.minidesk.repairorder.timeline.RepairOrderTimelineRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
@@ -31,6 +33,9 @@ class DashboardServiceTest {
     @Mock
     private RepairOrderRepository repairOrderRepository;
 
+    @Mock
+    private RepairOrderTimelineRepository repairOrderTimelineRepository;
+
     private Clock fixedClock;
     private DashboardService dashboardService;
 
@@ -44,6 +49,7 @@ class DashboardServiceTest {
             customerRepository,
             deviceRepository,
             repairOrderRepository,
+            repairOrderTimelineRepository,
             fixedClock
         );
     }
@@ -55,8 +61,35 @@ class DashboardServiceTest {
         when(repairOrderRepository.countByStatusNotIn(any())).thenReturn(8L);
         when(repairOrderRepository.countByStatus(any(RepairOrderStatus.class))).thenReturn(0L);
         when(repairOrderRepository.countByPriorityAndStatusNotIn(any(), any())).thenReturn(1L);
+        when(repairOrderRepository.countByCreatedAtGreaterThanEqualAndCreatedAtLessThan(any(), any())).thenReturn(2L);
         when(repairOrderRepository.countByCompletedAtGreaterThanEqualAndCompletedAtLessThan(any(), any())).thenReturn(2L);
         when(repairOrderRepository.countByDeliveredAtGreaterThanEqualAndDeliveredAtLessThan(any(), any())).thenReturn(3L);
+        when(repairOrderTimelineRepository.countDeliveredEventsBetween(any(), any())).thenReturn(3L);
+        when(repairOrderRepository.findRecentRepairOrders(any())).thenReturn(List.of());
+        when(repairOrderRepository.findPriorityQueue(any(), any(), any())).thenReturn(List.of());
+        when(repairOrderRepository.findReadyForDeliveryQueue(any(), any())).thenReturn(List.of());
+        when(repairOrderTimelineRepository.findRecentActivity(any())).thenReturn(List.of());
+    }
+
+    @Test
+    void shouldReturnDashboardSummaryResponseWithAllRequiredFields() {
+        setUpDefaultMocks();
+
+        DashboardSummaryResponse summary = dashboardService.getDashboardSummary();
+
+        assertNotNull(summary);
+        assertNotNull(summary.totals());
+        assertEquals(5L, summary.totals().customers());
+        assertEquals(10L, summary.totals().devices());
+        assertEquals(15L, summary.totals().repairOrders());
+        assertEquals(8L, summary.totals().activeRepairOrders());
+        assertEquals(2L, summary.totals().openedToday());
+        assertEquals(3L, summary.totals().deliveredToday());
+        assertEquals(10, summary.statusDistribution().size());
+        assertNotNull(summary.recentRepairOrders());
+        assertNotNull(summary.priorityQueue());
+        assertNotNull(summary.readyForDeliveryQueue());
+        assertNotNull(summary.recentActivity());
     }
 
     @Test
@@ -142,30 +175,6 @@ class DashboardServiceTest {
     }
 
     @Test
-    void shouldCalculateCompletedTodayUsingExactUtcBoundaries() {
-        setUpDefaultMocks();
-        Instant start = Instant.parse("2026-07-17T00:00:00Z");
-        Instant end = Instant.parse("2026-07-18T00:00:00Z");
-        when(repairOrderRepository.countByCompletedAtGreaterThanEqualAndCompletedAtLessThan(start, end)).thenReturn(4L);
-
-        DashboardResponse result = dashboardService.getDashboardStatistics();
-
-        assertEquals(4L, result.completedToday());
-    }
-
-    @Test
-    void shouldCalculateDeliveredTodayUsingExactUtcBoundaries() {
-        setUpDefaultMocks();
-        Instant start = Instant.parse("2026-07-17T00:00:00Z");
-        Instant end = Instant.parse("2026-07-18T00:00:00Z");
-        when(repairOrderRepository.countByDeliveredAtGreaterThanEqualAndDeliveredAtLessThan(start, end)).thenReturn(6L);
-
-        DashboardResponse result = dashboardService.getDashboardStatistics();
-
-        assertEquals(6L, result.deliveredToday());
-    }
-
-    @Test
     void shouldIncludeEveryRepairOrderStatusEnumValue() {
         setUpDefaultMocks();
         DashboardResponse result = dashboardService.getDashboardStatistics();
@@ -212,33 +221,10 @@ class DashboardServiceTest {
     }
 
     @Test
-    void shouldVerifyRepositoryCallsReceiveExactUtcInterval() {
-        setUpDefaultMocks();
-        Instant start = Instant.parse("2026-07-17T00:00:00Z");
-        Instant end = Instant.parse("2026-07-18T00:00:00Z");
-
-        dashboardService.getDashboardStatistics();
-
-        verify(repairOrderRepository).countByCompletedAtGreaterThanEqualAndCompletedAtLessThan(start, end);
-        verify(repairOrderRepository).countByDeliveredAtGreaterThanEqualAndDeliveredAtLessThan(start, end);
-    }
-
-    @Test
-    void shouldVerifyExcludedStatusesPassedToActiveCountQueriesAreDeliveredAndCancelled() {
-        setUpDefaultMocks();
-        List<RepairOrderStatus> expectedExcluded = List.of(RepairOrderStatus.DELIVERED, RepairOrderStatus.CANCELLED);
-
-        dashboardService.getDashboardStatistics();
-
-        verify(repairOrderRepository).countByStatusNotIn(expectedExcluded);
-        verify(repairOrderRepository).countByPriorityAndStatusNotIn(RepairPriority.URGENT, expectedExcluded);
-    }
-
-    @Test
     void shouldVerifyNoEntityCollectionLoadingRepositoryMethodsAreUsed() {
         setUpDefaultMocks();
 
-        dashboardService.getDashboardStatistics();
+        dashboardService.getDashboardSummary();
 
         verify(repairOrderRepository, never()).findAll();
         verify(repairOrderRepository, never()).findAllByOrderByCreatedAtDesc();

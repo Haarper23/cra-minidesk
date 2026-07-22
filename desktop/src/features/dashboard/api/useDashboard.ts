@@ -1,12 +1,13 @@
 import { useQuery } from '@tanstack/react-query';
-import { fetchDashboardStatistics } from './dashboardApi';
-import { DashboardData } from '../types/dashboardTypes';
+import { fetchDashboardSummary } from './dashboardApi';
+import { dashboardKeys } from './dashboardKeys';
+import { DashboardSummaryData } from '../types/dashboardTypes';
 import { ApiError } from '../../../lib/api/apiError';
 
 export function useDashboard() {
-  return useQuery<DashboardData, ApiError>({
-    queryKey: ['dashboard', 'statistics'],
-    queryFn: fetchDashboardStatistics,
-    staleTime: 1000 * 30, // 30 seconds
+  return useQuery<DashboardSummaryData, ApiError>({
+    queryKey: dashboardKeys.summary(),
+    queryFn: fetchDashboardSummary,
+    staleTime: 30000,
   });
 }
